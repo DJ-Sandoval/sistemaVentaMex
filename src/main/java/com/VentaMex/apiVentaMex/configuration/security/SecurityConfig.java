@@ -38,6 +38,7 @@ public class SecurityConfig {
                     http.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll(); // Rutas Swagger
                     http.requestMatchers(HttpMethod.POST, "/auth/**").permitAll(); // Rutas de login
                     http.requestMatchers("/actuator/**").permitAll(); // Actuator
+                    http.requestMatchers("/oauth2/**", "/login/oauth2/code/**", "/css/**", "/js/**", "/img/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/clientes/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll();
                     http.requestMatchers(HttpMethod.POST, "/api/productos/**").permitAll();
@@ -51,13 +52,19 @@ public class SecurityConfig {
                     http.requestMatchers(HttpMethod.POST, "/method/post").hasRole("USER");
                     http.requestMatchers(HttpMethod.DELETE, "/method/delete").hasRole("ADMIN");
                     http.requestMatchers(HttpMethod.PUT, "/method/put").hasRole("USER");
-
-                    http.requestMatchers("/api/clientes/**").hasAuthority("ROLE_USER");
+//.hasAuthority("ROLE_USER");
+                    http.requestMatchers("/api/clientes/**").hasRole("DEVELOPER");
                     http.requestMatchers("/web/**").hasAuthority("DEVELOPER");
 
                     // Denegar acceso a cualquier otra ruta no especificada
                     http.anyRequest().denyAll();
                 })
+                .oauth2Login(oauth2 ->
+                                oauth2
+                                        .loginPage("/auth/login") // tu página de login personalizada
+                                        .defaultSuccessUrl("/web/home", true) // redirige tras login OAuth
+                        .failureUrl("/auth/login?error=true") // opcional para manejar errores
+                )
                 .addFilterBefore(new JwtTokenValidator(jwtUtils), BasicAuthenticationFilter.class)
                 .build();
     }
