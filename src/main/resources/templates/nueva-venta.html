@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nueva Venta</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .btn-purple {
+            background-color: #6f42c1;
+            color: white;
+        }
+        .btn-purple:hover {
+            background-color: #5a32a3;
+            color: white;
+        }
+        .concepto-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .total-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <!-- Botón para abrir el modal -->
+    <button type="button" class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#ventaModal">
+        <i class="fas fa-plus-circle"></i> Nueva Venta
+    </button>
+
+    <!-- Modal para nueva venta -->
+    <div class="modal fade" id="ventaModal" tabindex="-1" aria-labelledby="ventaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ventaModalLabel">Nueva Venta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="ventaForm">
+                        <!-- Cliente -->
+                        <div class="mb-3">
+                            <label for="clienteId" class="form-label">Cliente ID</label>
+                            <input type="number" class="form-control" id="clienteId" required>
+                        </div>
+
+                        <!-- Producto -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="productoId" class="form-label">Producto ID</label>
+                                <input type="number" class="form-control" id="productoId" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="cantidad" class="form-label">Cantidad</label>
+                                <input type="number" class="form-control" id="cantidad" min="1" value="1" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="importe" class="form-label">Importe</label>
+                                <input type="number" class="form-control" id="importe" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Botón para agregar concepto -->
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-primary" id="agregarConcepto">
+                                <i class="fas fa-plus"></i> Agregar Concepto
+                            </button>
+                        </div>
+
+                        <!-- Lista de conceptos -->
+                        <div class="mb-3">
+                            <h5>Conceptos</h5>
+                            <div id="conceptosContainer" class="mt-3">
+                                <!-- Los conceptos se agregarán aquí dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Total -->
+                        <div class="total-section">
+                            <h5>Total: <span id="totalVenta">0.00</span></h5>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="guardarVenta">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS y dependencias -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // Variables para almacenar conceptos
+        let conceptos = [];
+        let totalVenta = 0;
+
+        // Obtener precio del producto cuando cambia el ID
+        $('#productoId').change(function() {
+            const productoId = $(this).val();
+            if (productoId) {
+                fetch(`/api/productos/${productoId}`)
+                    .then(response => response.json())
+                    .then(producto => {
+                        const cantidad = $('#cantidad').val();
+                        const importe = producto.precioUnitario * cantidad;
+                        $('#importe').val(importe.toFixed(2));
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener producto:', error);
+                        $('#importe').val('0.00');
+                    });
+            }
+        });
+
+        // Calcular importe cuando cambia la cantidad
+        $('#cantidad').change(function() {
+            const productoId = $('#productoId').val();
+            const cantidad = $(this).val();
+
+            if (productoId && cantidad) {
+                fetch(`/api/productos/${productoId}`)
+                    .then(response => response.json())
+                    .then(producto => {
+                        const importe = producto.precioUnitario * cantidad;
+                        $('#importe').val(importe.toFixed(2));
+                    })
+                    .catch(error => {
+                        console.error('Error al obtener producto:', error);
+                        $('#importe').val('0.00');
+                    });
+            }
+        });
+
+        // Agregar concepto a la lista
+        $('#agregarConcepto').click(function() {
+            const productoId = $('#productoId').val();
+            const cantidad = $('#cantidad').val();
+            const importe = $('#importe').val();
+
+            if (!productoId || !cantidad || !importe) {
+                alert('Por favor complete todos los campos del producto');
+                return;
+            }
+
+            // Obtener nombre del producto
+            fetch(`/api/productos/${productoId}`)
+                .then(response => response.json())
+                .then(producto => {
+                    const concepto = {
+                        productoId: productoId,
+                        productoNombre: producto.nombre,
+                        cantidad: cantidad,
+                        precioUnitario: (importe / cantidad).toFixed(2),
+                        importe: importe
+                    };
+
+                    conceptos.push(concepto);
+                    totalVenta += parseFloat(importe);
+                    $('#totalVenta').text(totalVenta.toFixed(2));
+
+                    // Agregar a la lista visual
+                    $('#conceptosContainer').append(`
+                        <div class="concepto-item">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>${producto.nombre}</strong>
+                                </div>
+                                <div class="col-md-2">
+                                    Cantidad: ${cantidad}
+                                </div>
+                                <div class="col-md-2">
+                                    Precio: $${(importe / cantidad).toFixed(2)}
+                                </div>
+                                <div class="col-md-2">
+                                    Importe: $${importe}
+                                </div>
+                            </div>
+                        </div>
+                    `);
+
+                    // Limpiar campos
+                    $('#productoId').val('');
+                    $('#cantidad').val('1');
+                    $('#importe').val('0.00');
+                })
+                .catch(error => {
+                    console.error('Error al obtener producto:', error);
+                });
+        });
+
+        // Guardar la venta
+        $('#guardarVenta').click(function() {
+            const clienteId = $('#clienteId').val();
+
+            if (!clienteId) {
+                alert('Por favor ingrese el ID del cliente');
+                return;
+            }
+
+            if (conceptos.length === 0) {
+                alert('Debe agregar al menos un concepto');
+                return;
+            }
+
+            const ventaRequest = {
+                clienteId: clienteId,
+                conceptos: conceptos.map(c => ({
+                    productoId: c.productoId,
+                    cantidad: parseInt(c.cantidad)
+                }))
+            };
+
+            // Enviar la venta al servidor
+            fetch('/api/ventas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(ventaRequest)
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Error al guardar la venta');
+            })
+            .then(data => {
+                alert('Venta guardada exitosamente!');
+                // Limpiar formulario
+                $('#ventaForm')[0].reset();
+                $('#conceptosContainer').empty();
+                conceptos = [];
+                totalVenta = 0;
+                $('#totalVenta').text('0.00');
+                // Cerrar modal
+                $('#ventaModal').modal('hide');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al guardar la venta: ' + error.message);
+            });
+        });
+    });
+</script>
+</body>
+</html>
