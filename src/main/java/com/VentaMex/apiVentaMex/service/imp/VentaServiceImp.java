@@ -13,6 +13,7 @@ import com.VentaMex.apiVentaMex.presentation.dto.VentaRequestDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
 import com.VentaMex.apiVentaMex.service.exception.VentaException;
 import com.VentaMex.apiVentaMex.service.exception.VentaNotFoundException;
+import com.VentaMex.apiVentaMex.service.interfaces.TicketService;
 import com.VentaMex.apiVentaMex.service.interfaces.VentaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +38,7 @@ public class VentaServiceImp implements VentaService {
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
     private final ConceptoRepository conceptoRepository;
+    private final TicketService ticketService;
 
     @Override
     @Transactional(readOnly = true)
@@ -48,21 +50,17 @@ public class VentaServiceImp implements VentaService {
 
     @Override
     public VentaResponseDTO registrarVenta(VentaRequestDTO ventaRequest) {
-        // Validar cliente
         Cliente cliente = clienteRepository.findById(ventaRequest.getClienteId())
                 .orElseThrow(() -> new VentaException("Cliente no encontrado con ID: " + ventaRequest.getClienteId()));
 
-        // Crear venta
         Venta venta = Venta.builder()
                 .fecha(LocalDateTime.now())
                 .cliente(cliente)
                 .total(0.0)
                 .build();
 
-        // Guardar la venta primero para obtener el ID
         Venta ventaGuardada = ventaRepository.save(venta);
 
-        // Procesar conceptos
         List<Concepto> conceptos = new ArrayList<>();
         for (ConceptoRequestDTO conceptoRequest : ventaRequest.getConceptos()) {
             Producto producto = productoRepository.findById(conceptoRequest.getProductoId())
@@ -71,7 +69,7 @@ public class VentaServiceImp implements VentaService {
             Double importe = producto.getPrecioUnitario() * conceptoRequest.getCantidad();
 
             Concepto concepto = Concepto.builder()
-                    .venta(ventaGuardada)  // Usar la venta guardada con ID
+                    .venta(ventaGuardada)
                     .producto(producto)
                     .cantidad(conceptoRequest.getCantidad())
                     .precioUnitario(producto.getPrecioUnitario())
@@ -82,15 +80,23 @@ public class VentaServiceImp implements VentaService {
             ventaGuardada.setTotal(ventaGuardada.getTotal() + importe);
         }
 
-        // Guardar conceptos y actualizar venta
         conceptoRepository.saveAll(conceptos);
-        ventaRepository.save(ventaGuardada);  // Actualizar el total
+        ventaRepository.save(ventaGuardada);
 
-        // Forzar la carga de los conceptos antes de convertir a DTO
         ventaGuardada.setConceptos(conceptos);
+
+        // 📌 Generar ticket PDF
+        try {
+            String rutaTicket = ticketService.generarTicketPdf(ventaGuardada.getId());
+            ventaGuardada.setRutaTicket(rutaTicket);
+            ventaRepository.save(ventaGuardada);
+        } catch (Exception e) {
+            throw new VentaException("Error al generar el ticket: " + e.getMessage());
+        }
 
         return convertirAVentaResponseDTO(ventaGuardada);
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -128,6 +134,8 @@ public class VentaServiceImp implements VentaService {
                 .clienteNombre(venta.getCliente().getNombre())
                 .total(venta.getTotal())
                 .conceptos(conceptosDTO)
+                .rutaTicket(venta.getRutaTicket())
                 .build();
     }
+
 }

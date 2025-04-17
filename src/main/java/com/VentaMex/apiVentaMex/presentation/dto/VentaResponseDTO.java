@@ -15,5 +15,6 @@ public class VentaResponseDTO {
     private String clienteNombre;
     private Double total;
     private List<ConceptoResponseDTO> conceptos;
+    private String rutaTicket;
 }
 

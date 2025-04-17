@@ -39,4 +39,7 @@ public class Venta {
     @Builder.Default
     @JsonManagedReference
     private List<Concepto> conceptos = new ArrayList<>();
+
+    @Column(name = "ruta_ticket")
+    private String rutaTicket;
 }
