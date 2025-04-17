@@ -2,6 +2,8 @@ package com.VentaMex.apiVentaMex.service.imp;
 
 import com.VentaMex.apiVentaMex.persistence.entities.Cliente;
 import com.VentaMex.apiVentaMex.persistence.repository.ClienteRepository;
+import com.VentaMex.apiVentaMex.presentation.dto.ClienteDTO;
+import com.VentaMex.apiVentaMex.presentation.dto.VentaDTO;
 import com.VentaMex.apiVentaMex.service.exception.ClienteNotFoundException;
 import com.VentaMex.apiVentaMex.service.interfaces.IClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -25,17 +30,20 @@ public class ClienteServiceImpl implements IClienteService {
         return clienteRepository.save(cliente);
     }
 
+
     @Override
-    @Transactional(readOnly = true)
-    public Page<Cliente> obtenerTodosClientes(Pageable pageable) {
-        return clienteRepository.findAll(pageable);
+    public Page<ClienteDTO> obtenerTodosClientes(Pageable pageable) {
+        Page<Cliente> clientes = clienteRepository.findAll(pageable);
+        return clientes.map(this::mapToDTO);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Cliente obtenerClientePorId(Long id) {
-        return clienteRepository.findById(id)
+    public ClienteDTO obtenerClientePorId(Long id) {
+        Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ClienteNotFoundException(id));
+
+        // Convertir a DTO
+        return mapToDTO(cliente);
     }
 
     @Override
@@ -55,5 +63,16 @@ public class ClienteServiceImpl implements IClienteService {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ClienteNotFoundException(id));
         clienteRepository.delete(cliente);
+    }
+
+    public ClienteDTO mapToDTO(Cliente cliente) {
+        List<VentaDTO> ventasDTO = cliente.getVentas().stream()
+                .map(venta -> new VentaDTO(
+                        venta.getId(),
+                        venta.getFecha(),
+                        venta.getTotal()
+                ))
+                .collect(Collectors.toList());
+        return new ClienteDTO(cliente.getId(), cliente.getNombre(), ventasDTO);
     }
 }

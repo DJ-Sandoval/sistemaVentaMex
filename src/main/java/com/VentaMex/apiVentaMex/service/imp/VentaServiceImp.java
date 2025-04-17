@@ -39,9 +39,12 @@ public class VentaServiceImp implements VentaService {
     private final ConceptoRepository conceptoRepository;
 
     @Override
-    public Page<Venta> obtenerTodasLasVentas(Pageable pageable) {
-        return ventaRepository.findAll(pageable);
+    @Transactional(readOnly = true)
+    public Page<VentaResponseDTO> obtenerTodasLasVentas(Pageable pageable) {
+        return ventaRepository.findAll(pageable)
+                .map(this::convertirAVentaResponseDTO);
     }
+
 
     @Override
     public VentaResponseDTO registrarVenta(VentaRequestDTO ventaRequest) {

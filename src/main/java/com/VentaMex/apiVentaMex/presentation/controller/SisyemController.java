@@ -27,6 +27,13 @@ public class SisyemController {
         return "home";
     }
 
+    @GetMapping("/registro")
+    public String mostrarFormRegistro() {
+        return "registroUsuario";
+    }
+
+
+
 
 
 

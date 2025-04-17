@@ -1,5 +1,6 @@
 package com.VentaMex.apiVentaMex.presentation.controller;
 import com.VentaMex.apiVentaMex.persistence.entities.Venta;
+import com.VentaMex.apiVentaMex.presentation.dto.VentaDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaRequestDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
 import com.VentaMex.apiVentaMex.service.exception.VentaException;
@@ -33,6 +34,11 @@ public class VentaController {
     public ResponseEntity<VentaResponseDTO> registrarVenta(@Valid @RequestBody VentaRequestDTO ventaRequest) {
         VentaResponseDTO ventaResponse = ventaService.registrarVenta(ventaRequest);
         return new ResponseEntity<>(ventaResponse, HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<VentaResponseDTO>> listarVentas(@ParameterObject Pageable pageable) {
+        return ResponseEntity.ok(ventaService.obtenerTodasLasVentas(pageable));
     }
 
     @GetMapping("/{id}")

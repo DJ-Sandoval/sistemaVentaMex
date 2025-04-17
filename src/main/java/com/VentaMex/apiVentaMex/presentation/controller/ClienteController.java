@@ -2,6 +2,7 @@ package com.VentaMex.apiVentaMex.presentation.controller;
 
 
 import com.VentaMex.apiVentaMex.persistence.entities.Cliente;
+import com.VentaMex.apiVentaMex.presentation.dto.ClienteDTO;
 import com.VentaMex.apiVentaMex.service.exception.ClienteNotFoundException;
 import com.VentaMex.apiVentaMex.service.interfaces.IClienteService;
 import jakarta.validation.Valid;
@@ -27,19 +28,22 @@ public class ClienteController {
         return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
     }
 
+
     @GetMapping
-    public ResponseEntity<Page<Cliente>> obtenerTodosClientes(
+    public ResponseEntity<Page<ClienteDTO>> obtenerTodosClientes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<Cliente> clientes = clienteService.obtenerTodosClientes(PageRequest.of(page, size));
+        Page<ClienteDTO> clientes = clienteService.obtenerTodosClientes(PageRequest.of(page, size));
         return ResponseEntity.ok(clientes);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Cliente> obtenerClientePorId(@PathVariable Long id) {
-        Cliente cliente = clienteService.obtenerClientePorId(id);
+    public ResponseEntity<ClienteDTO> obtenerClientePorId(@PathVariable Long id) {
+        ClienteDTO cliente = clienteService.obtenerClientePorId(id);
         return ResponseEntity.ok(cliente);
     }
+
+
 
     @PutMapping("/{id}")
     public ResponseEntity<Cliente> actualizarCliente(

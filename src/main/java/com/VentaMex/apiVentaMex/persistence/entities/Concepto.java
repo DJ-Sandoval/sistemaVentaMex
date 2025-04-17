@@ -1,5 +1,6 @@
 package com.VentaMex.apiVentaMex.persistence.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -19,7 +20,7 @@ public class Concepto {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_venta", nullable = false)
-    @NotNull(message = "La venta es obligatoria")
+    @JsonBackReference
     private Venta venta;
 
     @Positive(message = "La cantidad debe ser positiva")

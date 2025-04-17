@@ -10,7 +10,7 @@ import java.util.List;
 
 
 public interface VentaService {
-    Page<Venta> obtenerTodasLasVentas(Pageable pageable);
+    Page<VentaResponseDTO> obtenerTodasLasVentas(Pageable pageable);
     VentaResponseDTO registrarVenta(VentaRequestDTO ventaRequest);
     VentaResponseDTO obtenerVentaPorId(Long id);
     List<VentaResponseDTO> obtenerVentasPorCliente(Long clienteId);
