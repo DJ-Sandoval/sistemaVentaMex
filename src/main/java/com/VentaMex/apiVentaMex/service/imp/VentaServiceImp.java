@@ -39,6 +39,8 @@ public class VentaServiceImp implements VentaService {
     private final ProductoRepository productoRepository;
     private final ConceptoRepository conceptoRepository;
     private final TicketService ticketService;
+    private final ImpresoraService impresoraService;
+
 
     @Override
     @Transactional(readOnly = true)
@@ -87,11 +89,10 @@ public class VentaServiceImp implements VentaService {
 
         // 📌 Generar ticket PDF
         try {
-            String rutaTicket = ticketService.generarTicketPdf(ventaGuardada.getId());
-            ventaGuardada.setRutaTicket(rutaTicket);
-            ventaRepository.save(ventaGuardada);
+            String ticketTexto = ticketService.generarTicketTexto(ventaGuardada.getId());
+            impresoraService.imprimirTicket(ticketTexto);
         } catch (Exception e) {
-            throw new VentaException("Error al generar el ticket: " + e.getMessage());
+            throw new VentaException("Error al generar/imprimir el ticket: " + e.getMessage());
         }
 
         return convertirAVentaResponseDTO(ventaGuardada);
