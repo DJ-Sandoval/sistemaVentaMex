@@ -13,9 +13,10 @@ public class MyConfiguration {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("*") // Permite todas las solicitudes de cualquier dominio
+                        .allowedOriginPatterns("*") // Permite todas las solicitudes de cualquier dominio
                         .allowedMethods("HEAD", "GET", "PUT", "POST", "DELETE", "PATCH")
-                        .allowedHeaders("*"); // Permite todos los headers
+                        .allowedHeaders("*") // Permite todos los headers
+                        .allowCredentials(true); // Habilita creedenciales(cookies)
             }
         };
     }

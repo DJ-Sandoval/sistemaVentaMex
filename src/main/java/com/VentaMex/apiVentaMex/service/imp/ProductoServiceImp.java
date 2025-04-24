@@ -8,20 +8,27 @@ import com.VentaMex.apiVentaMex.presentation.dto.ProductoDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.ProductoResponseDTO;
 import com.VentaMex.apiVentaMex.service.exception.ProductoNotFoundException;
 import com.VentaMex.apiVentaMex.service.interfaces.IProductoService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @CacheConfig(cacheNames = "productos")
@@ -48,6 +55,8 @@ public class ProductoServiceImp implements IProductoService {
 
     @Override
     @Transactional(readOnly = true)
+    @CircuitBreaker(name = "productoService", fallbackMethod = "fallbackObtenerProducto")
+    @Retry(name = "productoService", fallbackMethod = "fallbackObtenerProducto")
     @Cacheable(value = "productos", key = "#id")
     public ProductoDTO obtenerProductoPorId(Long id) {
         Producto producto = productoRepository.findById(id)
@@ -93,7 +102,12 @@ public class ProductoServiceImp implements IProductoService {
                             .build())
                     .collect(Collectors.toList()));
         }
-
         return dto;
     }
+
+    public ProductoDTO fallbackObtenerProducto(Long id, Throwable ex) {
+        log.error("Error al obtener producto con ID {}: {}", id, ex.toString());
+        return new ProductoDTO(); // o una respuesta default
+    }
+
 }

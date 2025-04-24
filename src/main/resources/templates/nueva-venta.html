@@ -104,33 +104,14 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-    $(document).ready(function() {
-        // Variables para almacenar conceptos
+    $(document).ready(function () {
         let conceptos = [];
         let totalVenta = 0;
 
-        // Obtener precio del producto cuando cambia el ID
-        $('#productoId').change(function() {
-            const productoId = $(this).val();
-            if (productoId) {
-                fetch(`/api/productos/${productoId}`)
-                    .then(response => response.json())
-                    .then(producto => {
-                        const cantidad = $('#cantidad').val();
-                        const importe = producto.precioUnitario * cantidad;
-                        $('#importe').val(importe.toFixed(2));
-                    })
-                    .catch(error => {
-                        console.error('Error al obtener producto:', error);
-                        $('#importe').val('0.00');
-                    });
-            }
-        });
-
-        // Calcular importe cuando cambia la cantidad
-        $('#cantidad').change(function() {
+        // Obtener precio del producto al cambiar el ID o cantidad
+        function actualizarImporte() {
             const productoId = $('#productoId').val();
-            const cantidad = $(this).val();
+            const cantidad = $('#cantidad').val();
 
             if (productoId && cantidad) {
                 fetch(`/api/productos/${productoId}`)
@@ -139,15 +120,14 @@
                         const importe = producto.precioUnitario * cantidad;
                         $('#importe').val(importe.toFixed(2));
                     })
-                    .catch(error => {
-                        console.error('Error al obtener producto:', error);
-                        $('#importe').val('0.00');
-                    });
+                    .catch(() => $('#importe').val('0.00'));
             }
-        });
+        }
 
-        // Agregar concepto a la lista
-        $('#agregarConcepto').click(function() {
+        $('#productoId, #cantidad').change(actualizarImporte);
+
+        // Agregar concepto
+        $('#agregarConcepto').click(function () {
             const productoId = $('#productoId').val();
             const cantidad = $('#cantidad').val();
             const importe = $('#importe').val();
@@ -157,43 +137,32 @@
                 return;
             }
 
-            // Obtener nombre del producto
             fetch(`/api/productos/${productoId}`)
                 .then(response => response.json())
                 .then(producto => {
                     const concepto = {
-                        productoId: productoId,
+                        productoId: parseInt(productoId),
                         productoNombre: producto.nombre,
-                        cantidad: cantidad,
+                        cantidad: parseInt(cantidad),
                         precioUnitario: (importe / cantidad).toFixed(2),
-                        importe: importe
+                        importe: parseFloat(importe)
                     };
 
                     conceptos.push(concepto);
-                    totalVenta += parseFloat(importe);
+                    totalVenta += concepto.importe;
                     $('#totalVenta').text(totalVenta.toFixed(2));
 
-                    // Agregar a la lista visual
                     $('#conceptosContainer').append(`
                         <div class="concepto-item">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <strong>${producto.nombre}</strong>
-                                </div>
-                                <div class="col-md-2">
-                                    Cantidad: ${cantidad}
-                                </div>
-                                <div class="col-md-2">
-                                    Precio: $${(importe / cantidad).toFixed(2)}
-                                </div>
-                                <div class="col-md-2">
-                                    Importe: $${importe}
-                                </div>
+                                <div class="col-md-6"><strong>${concepto.productoNombre}</strong></div>
+                                <div class="col-md-2">Cantidad: ${concepto.cantidad}</div>
+                                <div class="col-md-2">Precio: $${concepto.precioUnitario}</div>
+                                <div class="col-md-2">Importe: $${concepto.importe.toFixed(2)}</div>
                             </div>
                         </div>
                     `);
 
-                    // Limpiar campos
                     $('#productoId').val('');
                     $('#cantidad').val('1');
                     $('#importe').val('0.00');
@@ -203,8 +172,8 @@
                 });
         });
 
-        // Guardar la venta
-        $('#guardarVenta').click(function() {
+        // Guardar venta
+        $('#guardarVenta').click(function () {
             const clienteId = $('#clienteId').val();
 
             if (!clienteId) {
@@ -218,44 +187,43 @@
             }
 
             const ventaRequest = {
-                clienteId: clienteId,
+                clienteId: parseInt(clienteId),
                 conceptos: conceptos.map(c => ({
                     productoId: c.productoId,
-                    cantidad: parseInt(c.cantidad)
+                    cantidad: c.cantidad
                 }))
             };
 
-            // Enviar la venta al servidor
             fetch('/api/ventas', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include', // 👈 ¡Aquí se envía la cookie con el JWT!
                 body: JSON.stringify(ventaRequest)
             })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('Error al guardar la venta');
-            })
-            .then(data => {
-                alert('Venta guardada exitosamente!');
-                // Limpiar formulario
-                $('#ventaForm')[0].reset();
-                $('#conceptosContainer').empty();
-                conceptos = [];
-                totalVenta = 0;
-                $('#totalVenta').text('0.00');
-                // Cerrar modal
-                $('#ventaModal').modal('hide');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error al guardar la venta: ' + error.message);
-            });
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('No autorizado o error en la venta');
+                })
+                .then(data => {
+                    alert('Venta guardada exitosamente!');
+                    $('#ventaForm')[0].reset();
+                    $('#conceptosContainer').empty();
+                    conceptos = [];
+                    totalVenta = 0;
+                    $('#totalVenta').text('0.00');
+                    $('#ventaModal').modal('hide');
+                })
+                .catch(error => {
+                    console.error('Error al guardar venta:', error);
+                    alert('Error: ' + error.message);
+                });
         });
     });
 </script>
+
 </body>
 </html>

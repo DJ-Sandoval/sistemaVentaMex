@@ -52,3 +52,27 @@ security:
     user:
       generator: AUTH0JWT-BACKEND
 
+resilience4j:
+  retry:
+    instances:
+      productoService:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - java.sql.SQLException
+          - org.springframework.dao.QueryTimeoutException
+
+  circuitbreaker:
+    instances:
+      productoService:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+
+  timelimiter:
+    instances:
+      productoService:
+        timeout-duration: 2s
+
+

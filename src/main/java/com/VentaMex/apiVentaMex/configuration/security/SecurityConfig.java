@@ -41,10 +41,8 @@ public class SecurityConfig {
                     http.requestMatchers("/oauth2/**", "/login/oauth2/code/**", "/css/**", "/js/**", "/img/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/clientes/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll();
-                    http.requestMatchers(HttpMethod.POST, "/api/productos/**").permitAll();
                     http.requestMatchers(HttpMethod.PUT, "/api/productos/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/ventas/**").permitAll();
-                    http.requestMatchers(HttpMethod.POST, "/api/ventas/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/web/**").permitAll();
 
                     // EndPoints Privados (Roles específicos)
@@ -53,11 +51,20 @@ public class SecurityConfig {
                     http.requestMatchers(HttpMethod.DELETE, "/method/delete").hasRole("ADMIN");
                     http.requestMatchers(HttpMethod.PUT, "/method/put").hasRole("USER");
 //.hasAuthority("ROLE_USER");
-                    http.requestMatchers("/api/clientes/**").hasRole("DEVELOPER");
-                    http.requestMatchers("/web/**").hasAuthority("DEVELOPER");
-
+                    // Metodos privados de productos
+                    http.requestMatchers(HttpMethod.POST, "/api/productos/**").authenticated();
+                    http.requestMatchers(HttpMethod.PUT, "/api/productos/**").authenticated();
+                    http.requestMatchers(HttpMethod.DELETE, "/api/productos/**").authenticated();
+                    // Metodos privados de clientes
+                    http.requestMatchers(HttpMethod.POST,"/api/clientes/**").authenticated();
+                    http.requestMatchers(HttpMethod.PUT,"/api/clientes/**").authenticated();
+                    http.requestMatchers(HttpMethod.DELETE,"/api/clientes/**").authenticated();
+                    // Metodos privados de ventas
+                    http.requestMatchers(HttpMethod.POST, "/api/ventas/**").authenticated();
+                    http.requestMatchers(HttpMethod.DELETE, "/api/ventas/**").authenticated();
+                    http.requestMatchers(HttpMethod.GET, "/web/venta").authenticated();
                     // Denegar acceso a cualquier otra ruta no especificada
-                    http.anyRequest().denyAll();
+                    http.anyRequest().authenticated();
                 })
                 .oauth2Login(oauth2 ->
                                 oauth2

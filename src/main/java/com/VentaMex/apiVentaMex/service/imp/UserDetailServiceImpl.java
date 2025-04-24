@@ -8,6 +8,8 @@ import com.VentaMex.apiVentaMex.presentation.dto.AuthCreateUserRequest;
 import com.VentaMex.apiVentaMex.presentation.dto.AuthLoginRequest;
 import com.VentaMex.apiVentaMex.presentation.dto.AuthResponse;
 import com.VentaMex.apiVentaMex.util.components.JwtUtils;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,7 +92,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
         return authResponse;
     }
 
-    public AuthResponse loginUser(AuthLoginRequest authLoginRequest) {
+    public AuthResponse loginUser(AuthLoginRequest authLoginRequest, HttpServletResponse response) {
 
         String username = authLoginRequest.username();
         String password = authLoginRequest.password();
@@ -99,8 +101,17 @@ public class UserDetailServiceImpl implements UserDetailsService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         String accessToken = jwtUtils.createToken(authentication);
-        AuthResponse authResponse = new AuthResponse(username, "User loged succesfully", accessToken, true);
-        return authResponse;
+        // Crear cookie HttpOnly
+        Cookie cookie = new Cookie("jwt", accessToken);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true); // True si se manejan codigos http
+        cookie.setPath("/");
+        cookie.setMaxAge(60 * 60); // 1 hora
+        response.addCookie(cookie);
+
+
+
+        return new AuthResponse(username, "Login Exitoso", null, true);
     }
 
     public Authentication authenticate(String username, String password) {
