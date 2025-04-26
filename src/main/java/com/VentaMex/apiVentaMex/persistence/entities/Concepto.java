@@ -1,5 +1,4 @@
 package com.VentaMex.apiVentaMex.persistence.entities;
-
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

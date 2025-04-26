@@ -1,33 +1,32 @@
 package com.VentaMex.apiVentaMex.presentation.controller;
 
+import com.VentaMex.apiVentaMex.presentation.api.POSAPI;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@RequestMapping("/web")
-public class SisyemController {
-    @GetMapping("/venta")
+public class SisyemController implements POSAPI
+{
+    @Override
     public String mostrarPagina() {
         return "nueva-venta"; // se dirige al archivo templates/index.html
     }
 
-    @GetMapping("/login")
+    @Override
     public String mostrarLogin() {
         return "login"; // se dirige al archivo templates/index.html
     }
 
-    @GetMapping("/home")
+    @Override
     public String mostrarHome() {
         return "home";
     }
 
-    @GetMapping("/index")
+    @Override
     public String mostrarIndex() {
         return "home";
     }
 
-    @GetMapping("/registro")
+    @Override
     public String mostrarFormRegistro() {
         return "registroUsuario";
     }

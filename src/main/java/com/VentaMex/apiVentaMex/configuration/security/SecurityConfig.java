@@ -37,6 +37,7 @@ public class SecurityConfig {
                     // EndPoints públicos
                     http.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll(); // Rutas Swagger
                     http.requestMatchers(HttpMethod.POST, "/auth/**").permitAll(); // Rutas de login
+                    http.requestMatchers(HttpMethod.GET, "/auth/**").permitAll();
                     http.requestMatchers("/actuator/**").permitAll(); // Actuator
                     http.requestMatchers("/oauth2/**", "/login/oauth2/code/**", "/css/**", "/js/**", "/img/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/clientes/**").permitAll();
@@ -68,7 +69,7 @@ public class SecurityConfig {
                 })
                 .oauth2Login(oauth2 ->
                                 oauth2
-                                        .loginPage("/auth/login") // tu página de login personalizada
+                                        .loginPage("/web/login") // tu página de login personalizada
                                         .defaultSuccessUrl("/web/home", true) // redirige tras login OAuth
                         .failureUrl("/auth/login?error=true") // opcional para manejar errores
                 )

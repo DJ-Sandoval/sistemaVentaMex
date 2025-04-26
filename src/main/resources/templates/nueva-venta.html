@@ -27,14 +27,66 @@
             border-radius: 5px;
             margin-top: 20px;
         }
+        tr {
+    transition: all 0.3s ease;
+}
+
+/* Estilo para el botón durante carga */
+.btn-eliminando {
+    position: relative;
+    padding-left: 2.5rem;
+}
+
+.btn-eliminando .spinner-border {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
     </style>
 </head>
 <body>
 <div class="container mt-5">
-    <!-- Botón para abrir el modal -->
-    <button type="button" class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#ventaModal">
-        <i class="fas fa-plus-circle"></i> Nueva Venta
-    </button>
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div>
+            <button type="button" class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#ventaModal">
+                <i class="fas fa-plus-circle"></i> Nueva Venta
+            </button>
+        </div>
+        <div>
+            <button class="btn btn-secondary me-2" id="btnInicio">
+                <i class="fas fa-home"></i> Inicio
+            </button>
+            <button class="btn btn-danger me-2" id="btnReportePDF">
+                <i class="fas fa-file-pdf"></i> PDF
+            </button>
+            <button class="btn btn-success me-2" id="btnReporteExcel">
+                <i class="fas fa-file-excel"></i> Excel
+            </button>
+            <button class="btn btn-info" id="btnHistorial">
+                <i class="fas fa-history"></i> Historial
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabla de ventas -->
+    <div class="table-responsive mt-4">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Acciones</th>
+            </tr>
+            </thead>
+            <tbody id="ventasTableBody">
+            <!-- Las ventas se cargarán dinámicamente aquí -->
+            </tbody>
+        </table>
+    </div>
+
 
     <!-- Modal para nueva venta -->
     <div class="modal fade" id="ventaModal" tabindex="-1" aria-labelledby="ventaModalLabel" aria-hidden="true">
@@ -224,6 +276,120 @@
         });
     });
 </script>
+<script>
+    $(document).ready(function() {
+        cargarVentas();
+
+        // Función para cargar las ventas
+        function cargarVentas() {
+             mostrarSpinner();
+            fetch('/api/ventas', { credentials: 'include' })
+                .then(response => response.json())
+                .then(data => {
+                    const ventas = data.content; // Si usas paginación
+                    const tbody = $('#ventasTableBody');
+                    tbody.empty();
+                    ventas.forEach(venta => {
+                        tbody.append(`
+                            <tr>
+                                <td>${venta.id}</td>
+                                <td>${new Date(venta.fecha).toLocaleString()}</td>
+                                <td>${venta.clienteNombre}</td>
+                                <td>$${venta.total.toFixed(2)}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm eliminarVenta" data-id="${venta.id}">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                    ocultarSpinner();
+                })
+                .catch(error => {
+                    console.error('Error al cargar ventas:', error);
+                    ocultarSpinner();
+                });
+        }
+
+        // Evento eliminar venta
+        $(document).on('click', '.eliminarVenta', function () {
+    const ventaId = $(this).data('id');
+    const $boton = $(this);
+    const $fila = $boton.closest('tr');
+
+    if (confirm('¿Estás seguro de que deseas eliminar esta venta?')) {
+        // Estado de carga
+        $boton.prop('disabled', true);
+        $boton.html(`
+            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            Eliminando...
+        `);
+
+        // Cambiar apariencia de la fila
+        $fila.addClass('table-warning');
+
+        fetch(`/api/ventas/${ventaId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(response.statusText);
+
+            // Animación de éxito
+            $fila.removeClass('table-warning').addClass('table-success');
+            setTimeout(() => {
+                $fila.fadeOut(300, () => $(this).remove());
+            }, 500);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Restaurar y mostrar error
+            $fila.removeClass('table-warning');
+            $boton.html('<i class="fas fa-trash"></i> Eliminar');
+            $boton.prop('disabled', false);
+            $boton.addClass('btn-danger').removeClass('btn-secondary');
+
+            // Mostrar mensaje de error en la fila
+            const $errorCell = $('<td colspan="5" class="text-danger">').text('Error: ' + error.message);
+            $fila.after($('<tr>').append($errorCell));
+            setTimeout(() => $errorCell.fadeOut(1000, () => $errorCell.remove()), 3000);
+        });
+    }
+});
+
+        // Botones extra
+        $('#btnInicio').click(function() {
+            window.location.href = '/web/home'; // Cambia la ruta si tu inicio está en otra URL
+        });
+
+        $('#btnReportePDF').click(function() {
+            window.open('/api/ventas/reporte/pdf', '_blank'); // Ajusta tu endpoint si es necesario
+        });
+
+        $('#btnReporteExcel').click(function() {
+            window.open('/api/ventas/reporte/excel', '_blank'); // Ajusta tu endpoint si es necesario
+        });
+
+        $('#btnHistorial').click(function() {
+            window.location.href = '/ventas/historial'; // Ajusta tu ruta del historial
+        });
+    });
+    function mostrarSpinner() {
+    $('#loadingSpinner').show();
+}
+
+function ocultarSpinner() {
+    $('#loadingSpinner').hide();
+}
+</script>
+<!-- Spinner de carga -->
+<div id="loadingSpinner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.7); z-index: 1050; display: flex; align-items: center; justify-content: center;">
+    <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+</div>
+
 
 </body>
 </html>

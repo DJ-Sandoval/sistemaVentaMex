@@ -118,6 +118,14 @@ public class VentaServiceImp implements VentaService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional
+    public void eliminarVenta(Long id) {
+        Venta venta = ventaRepository.findById(id)
+                .orElseThrow(() -> new VentaNotFoundException(id));
+        ventaRepository.delete(venta);
+    }
+
     private VentaResponseDTO convertirAVentaResponseDTO(Venta venta) {
         List<ConceptoResponseDTO> conceptosDTO = venta.getConceptos().stream()
                 .map(concepto -> ConceptoResponseDTO.builder()

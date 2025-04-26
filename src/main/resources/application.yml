@@ -7,9 +7,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
   datasource:
-    url: jdbc:mysql://localhost:3306/bdventamex
-    username: jose
-    password: Downhill2003
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   thymeleaf:
     prefix: classpath:/templates/
@@ -22,8 +22,8 @@ spring:
       client:
         registration:
           github:
-            client-id: Ov23lioJaUibBoeg9Rvo
-            client-secret: ccb344f9cc648747871f8fc79e8b8d4353dba2ce
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
 
 management:
   endpoints:
@@ -37,7 +37,6 @@ management:
     info:
       enabled: true
 
-# ✅ SOLUCIÓN (estructura jerárquica):
 info:
   app:
     name: "apiVentaMex"
@@ -47,10 +46,9 @@ info:
 security:
   jwt:
     key:
-      private: |
-        MIICWwIBAAKBgQCtYo32glu50D5XU3e7jk5RW3OvmmSIA4RxvS2N7acGixkvRkkn2yIGQXGhMmWzU6dT4gKEdsdJugP7iv5ornIs+VNLzunXLGu+qTHeG5BQJneugeTdSNZsu4cf7j0XrHo0mDONExkvKiXsG32XqqZ/8QJx9WZA3U+QV4JHrHd82wIDAQABAn8ArWHglKHHGAkmTi0pjmS/7JuHFBNQdLMPvq1u4H7Gh8SRarTecvyvCZJoDspW6Py+VyOrYMtmflOFqAVWY1gO00QrvPO93iuy5dQCQGZ64qmDjWaozOdnf73C2ZFaWcw052ReKRvPvoVoQYrhTN6ALcL5/Pw1J/oQ/Cf5XXB5AkEA4XIV80lGISHEB8vMAe02bMN+g04k8RpzloqS78ILcW7NfP3aC0Yiu4eN52epFkUNnwv1OG5VSxTs36ahUDCe3wJBAMTiNLwlvyG46Rp9/bDn0JVN+RRghMeHkf+59apHIRR8s4HwJY3aMhl3l0DzFtSUZg7OvMbFx2MBrT7mIPJwbYUCQQC6kguQVuduq97rBMFEJuePgwnD6Hux/E4EG5IWUOPfb+8mrX4xLk24HCpXgvXvtB3drau2k7iKdjrBq8h78IDJAkAfUwom4S6Os/fKcj85tTg3eQdnGZAmmsg80p5mcBiwRMLeqpGfBxcvfBqBh+ua+N1f/76DNZZqhyrENiMJz59tAkEAkbjouc73fd5LPaOH/4cAyAHTIfKaOIoq5l97a1ttm9sec5hb7AylfG/Z8sluHWNtMCf01LR6t+NmHtVsACorbg==
+      private: ${JWT_PRIVATE_KEY}
     user:
-      generator: AUTH0JWT-BACKEND
+      generator: ${JWT_USER_GENERATOR}
 
 resilience4j:
   retry:
@@ -74,5 +72,4 @@ resilience4j:
     instances:
       productoService:
         timeout-duration: 2s
-
 

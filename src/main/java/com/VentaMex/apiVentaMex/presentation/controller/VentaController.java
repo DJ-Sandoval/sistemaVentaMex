@@ -1,5 +1,6 @@
 package com.VentaMex.apiVentaMex.presentation.controller;
 import com.VentaMex.apiVentaMex.persistence.entities.Venta;
+import com.VentaMex.apiVentaMex.presentation.api.SaleAPI;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaRequestDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
@@ -23,42 +24,41 @@ import java.io.File;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/ventas")
-@Tag(name = "Ventas", description = "API para gestión de ventas")
 @RequiredArgsConstructor
-public class VentaController {
+public class VentaController implements SaleAPI {
     private final VentaService ventaService;
 
-
-
-    @PostMapping
+    @Override
     public ResponseEntity<VentaResponseDTO> registrarVenta(@Valid @RequestBody VentaRequestDTO ventaRequest) {
         VentaResponseDTO ventaResponse = ventaService.registrarVenta(ventaRequest);
         return new ResponseEntity<>(ventaResponse, HttpStatus.CREATED);
     }
 
-    @GetMapping
+    @Override
     public ResponseEntity<Page<VentaResponseDTO>> listarVentas(@ParameterObject Pageable pageable) {
         return ResponseEntity.ok(ventaService.obtenerTodasLasVentas(pageable));
     }
 
-    @GetMapping("/{id}")
+    @Override
     public ResponseEntity<VentaResponseDTO> obtenerVentaPorId(@PathVariable Long id) {
         VentaResponseDTO ventaResponse = ventaService.obtenerVentaPorId(id);
         return ResponseEntity.ok(ventaResponse);
     }
 
-    @GetMapping("/cliente/{clienteId}")
+    @Override
     public ResponseEntity<List<VentaResponseDTO>> obtenerVentasPorCliente(@PathVariable Long clienteId) {
         List<VentaResponseDTO> ventas = ventaService.obtenerVentasPorCliente(clienteId);
         return ResponseEntity.ok(ventas);
+    }
+
+    @Override
+    public ResponseEntity<Void> eliminarVenta(Long id) {
+        ventaService.eliminarVenta(id);
+        return ResponseEntity.noContent().build();
     }
 
     @ExceptionHandler(VentaException.class)
     public ResponseEntity<String> handleVentaException(VentaException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
-
-
-
 }

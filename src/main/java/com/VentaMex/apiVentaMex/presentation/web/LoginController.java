@@ -1,5 +1,6 @@
 package com.VentaMex.apiVentaMex.presentation.web;
 
+import com.VentaMex.apiVentaMex.presentation.api.LoginAPI;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
@@ -7,9 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-@RequestMapping("access")
-public class LoginController {
-    @GetMapping("/logout")
+public class LoginController implements LoginAPI {
+    @Override
     public String logout(HttpServletResponse response) {
         Cookie cookie = new Cookie("jwt", null);
         cookie.setHttpOnly(true);
