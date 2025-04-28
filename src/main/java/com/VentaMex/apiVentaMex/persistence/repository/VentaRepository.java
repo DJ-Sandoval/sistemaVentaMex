@@ -16,5 +16,5 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     List<Venta> findByClienteId(Long clienteId);
     @EntityGraph(attributePaths = {"cliente", "conceptos", "conceptos.producto"})
     Optional<Venta> findWithConceptosById(Long id);
-
+    Page<Venta> findByClienteNombreContainingIgnoreCase(String nombreCliente, Pageable pageable);
 }

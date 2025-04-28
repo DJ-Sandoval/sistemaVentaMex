@@ -114,6 +114,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
         return new AuthResponse(username, "Login Exitoso", null, true);
     }
 
+
     public Authentication authenticate(String username, String password) {
         UserDetails userDetails = this.loadUserByUsername(username);
 

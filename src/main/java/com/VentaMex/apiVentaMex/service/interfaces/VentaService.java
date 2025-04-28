@@ -19,4 +19,5 @@ public interface VentaService {
     List<VentaResponseDTO> obtenerVentasPorCliente(Long clienteId);
     @CacheEvict(value = "ventas", key = "#id")
     void eliminarVenta(Long id);
+    Page<VentaResponseDTO> buscarVentas(String search, Pageable pageable);
 }

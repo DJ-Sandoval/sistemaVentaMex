@@ -35,8 +35,10 @@ public class VentaController implements SaleAPI {
     }
 
     @Override
-    public ResponseEntity<Page<VentaResponseDTO>> listarVentas(@ParameterObject Pageable pageable) {
-        return ResponseEntity.ok(ventaService.obtenerTodasLasVentas(pageable));
+    public ResponseEntity<Page<VentaResponseDTO>> listarVentas(
+            @RequestParam(required = false) String search,
+            @ParameterObject Pageable pageable) {
+        return ResponseEntity.ok(ventaService.buscarVentas(search, pageable));
     }
 
     @Override

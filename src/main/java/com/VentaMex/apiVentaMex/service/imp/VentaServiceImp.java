@@ -126,6 +126,17 @@ public class VentaServiceImp implements VentaService {
         ventaRepository.delete(venta);
     }
 
+    @Override
+    public Page<VentaResponseDTO> buscarVentas(String search, Pageable pageable) {
+        if (search == null || search.isEmpty()) {
+            return ventaRepository.findAll(pageable)
+                    .map(this::convertirAVentaResponseDTO);
+        } else {
+            return ventaRepository.findByClienteNombreContainingIgnoreCase(search, pageable)
+                    .map(this::convertirAVentaResponseDTO);
+        }
+    }
+
     private VentaResponseDTO convertirAVentaResponseDTO(Venta venta) {
         List<ConceptoResponseDTO> conceptosDTO = venta.getConceptos().stream()
                 .map(concepto -> ConceptoResponseDTO.builder()

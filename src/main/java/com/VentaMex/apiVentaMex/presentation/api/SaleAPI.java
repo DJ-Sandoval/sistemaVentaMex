@@ -24,7 +24,9 @@ public interface SaleAPI {
     ResponseEntity<VentaResponseDTO> registrarVenta(@Valid @RequestBody VentaRequestDTO ventaRequest);
 
     @GetMapping
-    ResponseEntity<Page<VentaResponseDTO>> listarVentas(@ParameterObject Pageable pageable);
+    ResponseEntity<Page<VentaResponseDTO>> listarVentas(
+            @RequestParam(required = false) String search,
+            @ParameterObject Pageable pageable);
 
     @GetMapping("/{id}")
     ResponseEntity<VentaResponseDTO> obtenerVentaPorId(@PathVariable Long id);

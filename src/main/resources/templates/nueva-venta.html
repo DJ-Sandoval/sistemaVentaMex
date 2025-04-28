@@ -43,11 +43,50 @@
     top: 50%;
     transform: translateY(-50%);
 }
+        .pagination {
+    margin: 20px 0;
+}
+.page-item.active .page-link {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+}
+.page-link {
+    color: #6f42c1;
+}
+      #searchInput {
+    max-width: 300px;
+    display: inline-block;
+}
+        /* Reducir el tamaño de la tabla */
+        .table-responsive {
+            max-width: 90%; /* Limitar el ancho de la tabla */
+            margin: 0 auto; /* Centrar la tabla */
+            overflow-x: auto;
+        }
+
+        table {
+            font-size: 0.85rem; /* Reducir el tamaño de la fuente */
+        }
+
+        th, td {
+            padding: 0.5rem; /* Reducir el padding de las celdas */
+        }
+
     </style>
 </head>
 <body>
+<br>
+<div class="text-center mb-4">
+    <h3>Listado de Ventas</h3>
+</div>
+<br>
+<div class="d-flex justify-content-center mb-4">
+    <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Buscar..." style="max-width: 300px;">
+    <button id="searchButton" class="btn btn-primary btn-sm ms-2">Buscar</button>
+</div>
+
 <div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mt-4">
+    <div class="d-flex justify-content-center gap-2 mb-4">
         <div>
             <button type="button" class="btn btn-purple" data-bs-toggle="modal" data-bs-target="#ventaModal">
                 <i class="fas fa-plus-circle"></i> Nueva Venta
@@ -69,8 +108,9 @@
         </div>
     </div>
 
+
     <!-- Tabla de ventas -->
-    <div class="table-responsive mt-4">
+     <div class="table-responsive mt-4" style="max-width: 100%; overflow-x: auto;">
         <table class="table table-bordered table-hover">
             <thead class="table-light">
             <tr>
@@ -85,6 +125,7 @@
             <!-- Las ventas se cargarán dinámicamente aquí -->
             </tbody>
         </table>
+        <div id="paginador" class="mt-4 text-center"></div>
     </div>
 
 
@@ -154,6 +195,131 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    // Funciones globales para el spinner
+    function mostrarSpinner() {
+        $('#loadingSpinner').show();
+    }
+
+    function ocultarSpinner() {
+        $('#loadingSpinner').hide();
+    }
+
+    // Función para cargar las ventas
+    function cargarVentas(page = 0, size = 5, search = "") {
+        mostrarSpinner();
+        $.get(`/api/ventas?page=${page}&size=${size}&search=${search}`)
+            .done(function(data) {
+                $('#ventasTableBody').empty();
+
+                if (data.content && data.content.length > 0) {
+                    data.content.forEach(venta => {
+                        $('#ventasTableBody').append(`
+                            <tr>
+                                <td>${venta.id}</td>
+                                <td>${new Date(venta.fecha).toLocaleString()}</td>
+                                <td>${venta.clienteNombre || 'Sin nombre'}</td>
+                                <td>$${(venta.total || 0).toFixed(2)}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm eliminarVenta" data-id="${venta.id}">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+
+                    generarPaginador(data.totalPages, page, size, search); // <--- siempre llamar
+                } else {
+                    $('#ventasTableBody').append('<tr><td colspan="5" class="text-center">No se encontraron ventas</td></tr>');
+                    generarPaginador(1, 0, size, search); // <--- genera paginador vacío igual para no desaparecer
+                }
+            })
+            .fail(function(error) {
+                console.error('Error al cargar ventas:', error);
+                $('#ventasTableBody').html('<tr><td colspan="5" class="text-center text-danger">Error al cargar ventas</td></tr>');
+                generarPaginador(1, 0, size, search); // <--- genera paginador igual
+            })
+            .always(function() {
+                ocultarSpinner();
+            });
+    }
+
+    // Función para generar el paginador
+    function generarPaginador(totalPages, currentPage, pageSize, search) {
+        if (totalPages <= 1) {
+            $('#paginador').html(''); // <--- No mostrar paginador si sólo hay una página
+            return;
+        }
+
+        let paginadorHtml = '<nav><ul class="pagination justify-content-center">';
+
+        // Botón Anterior
+        paginadorHtml += `<li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="cargarVentas(${currentPage - 1}, ${pageSize}, '${search}'); return false;">&laquo;</a>
+        </li>`;
+
+        // Páginas numeradas
+        for (let i = 0; i < totalPages; i++) {
+            paginadorHtml += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="cargarVentas(${i}, ${pageSize}, '${search}'); return false;">${i + 1}</a>
+                </li>`;
+        }
+
+        // Botón Siguiente
+        paginadorHtml += `<li class="page-item ${currentPage >= totalPages - 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="cargarVentas(${currentPage + 1}, ${pageSize}, '${search}'); return false;">&raquo;</a>
+        </li>`;
+
+        paginadorHtml += '</ul></nav>';
+
+        $('#paginador').html(paginadorHtml);
+    }
+
+    // Document Ready
+    $(document).ready(function() {
+        let conceptos = [];
+        let totalVenta = 0;
+        let currentPage = 0;
+        let pageSize = 5;
+        let currentSearch = "";
+
+        cargarVentas(currentPage, pageSize, currentSearch);
+
+        // Código de agregar concepto, guardar venta, eliminar venta, botones adicionales
+        $('#searchButton').click(function() {
+            currentSearch = $('#searchInput').val();
+            cargarVentas(0, pageSize, currentSearch);
+        });
+
+        $(document).on('click', '.eliminarVenta', function() {
+            const ventaId = $(this).data('id');
+            const $fila = $(this).closest('tr');
+
+            if (confirm('¿Deseas eliminar esta venta?')) {
+                fetch(`/api/ventas/${ventaId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error al eliminar');
+                    $fila.fadeOut(500, function() {
+                        cargarVentas(currentPage, pageSize, currentSearch);
+                    });
+                })
+                .catch(error => console.error('Error al eliminar venta:', error));
+            }
+        });
+
+        // Otros botones (Inicio, Reporte PDF, Excel, Historial)
+        $('#btnInicio').click(() => window.location.href = '/web/home');
+        $('#btnReportePDF').click(() => window.open('/api/ventas/reporte/pdf', '_blank'));
+        $('#btnReporteExcel').click(() => window.open('/api/ventas/reporte/excel', '_blank'));
+        $('#btnHistorial').click(() => window.location.href = '/ventas/historial');
+    });
+</script>
 
 <script>
     $(document).ready(function () {
@@ -282,7 +448,7 @@
 
         // Función para cargar las ventas
         function cargarVentas() {
-             mostrarSpinner();
+            mostrarSpinner();
             fetch('/api/ventas', { credentials: 'include' })
                 .then(response => response.json())
                 .then(data => {
@@ -312,77 +478,31 @@
                 });
         }
 
-        // Evento eliminar venta
-        $(document).on('click', '.eliminarVenta', function () {
-    const ventaId = $(this).data('id');
-    const $boton = $(this);
-    const $fila = $boton.closest('tr');
-
-    if (confirm('¿Estás seguro de que deseas eliminar esta venta?')) {
-        // Estado de carga
-        $boton.prop('disabled', true);
-        $boton.html(`
-            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-            Eliminando...
-        `);
-
-        // Cambiar apariencia de la fila
-        $fila.addClass('table-warning');
-
-        fetch(`/api/ventas/${ventaId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        })
-        .then(response => {
-            if (!response.ok) throw new Error(response.statusText);
-
-            // Animación de éxito
-            $fila.removeClass('table-warning').addClass('table-success');
-            setTimeout(() => {
-                $fila.fadeOut(300, () => $(this).remove());
-            }, 500);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            // Restaurar y mostrar error
-            $fila.removeClass('table-warning');
-            $boton.html('<i class="fas fa-trash"></i> Eliminar');
-            $boton.prop('disabled', false);
-            $boton.addClass('btn-danger').removeClass('btn-secondary');
-
-            // Mostrar mensaje de error en la fila
-            const $errorCell = $('<td colspan="5" class="text-danger">').text('Error: ' + error.message);
-            $fila.after($('<tr>').append($errorCell));
-            setTimeout(() => $errorCell.fadeOut(1000, () => $errorCell.remove()), 3000);
-        });
-    }
-});
-
-        // Botones extra
-        $('#btnInicio').click(function() {
-            window.location.href = '/web/home'; // Cambia la ruta si tu inicio está en otra URL
-        });
-
-        $('#btnReportePDF').click(function() {
-            window.open('/api/ventas/reporte/pdf', '_blank'); // Ajusta tu endpoint si es necesario
-        });
-
-        $('#btnReporteExcel').click(function() {
-            window.open('/api/ventas/reporte/excel', '_blank'); // Ajusta tu endpoint si es necesario
-        });
-
-        $('#btnHistorial').click(function() {
-            window.location.href = '/ventas/historial'; // Ajusta tu ruta del historial
+        // Eliminar venta
+        $(document).on('click', '.eliminarVenta', function() {
+            const ventaId = $(this).data('id');
+            if (confirm('¿Estás seguro de eliminar esta venta?')) {
+                fetch(`/api/ventas/${ventaId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            alert('Venta eliminada');
+                            cargarVentas();
+                        } else {
+                            alert('Error al eliminar venta');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al eliminar venta:', error);
+                        alert('Error al eliminar venta');
+                    });
+            }
         });
     });
-    function mostrarSpinner() {
-    $('#loadingSpinner').show();
-}
-
-function ocultarSpinner() {
-    $('#loadingSpinner').hide();
-}
 </script>
+
 <!-- Spinner de carga -->
 <div id="loadingSpinner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.7); z-index: 1050; display: flex; align-items: center; justify-content: center;">
     <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
