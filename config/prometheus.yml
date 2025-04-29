@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'spring-boot'
+    metrics_path: '/actuator/prometheus'  # <-- Esta línea es suficiente
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:8080']  # Para Windows/Mac
+        # Para Linux usar: ['<tu-ip-host>:8080'] o ['172.17.0.1:8080']

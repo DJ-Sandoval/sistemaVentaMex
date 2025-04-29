@@ -7,10 +7,7 @@ import com.VentaMex.apiVentaMex.persistence.repository.ClienteRepository;
 import com.VentaMex.apiVentaMex.persistence.repository.ConceptoRepository;
 import com.VentaMex.apiVentaMex.persistence.repository.ProductoRepository;
 import com.VentaMex.apiVentaMex.persistence.repository.VentaRepository;
-import com.VentaMex.apiVentaMex.presentation.dto.ConceptoRequestDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.ConceptoResponseDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.VentaRequestDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
+import com.VentaMex.apiVentaMex.presentation.dto.*;
 import com.VentaMex.apiVentaMex.service.exception.VentaException;
 import com.VentaMex.apiVentaMex.service.exception.VentaNotFoundException;
 import com.VentaMex.apiVentaMex.service.interfaces.TicketService;
@@ -23,10 +20,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-
+import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -136,6 +135,23 @@ public class VentaServiceImp implements VentaService {
                     .map(this::convertirAVentaResponseDTO);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HistorialVentaDTO> obtenerHistorialVentas(LocalDate fechaInicio, LocalDate fechaFin) {
+        List<Map<String, Object>> resultados = ventaRepository.obtenerHistorialVentasPorFechas(fechaInicio, fechaFin);
+        return resultados.stream().map(row -> HistorialVentaDTO.builder()
+                        .idCliente(((Number) row.get("idCliente")).longValue())
+                        .nombreCliente((String) row.get("nombreCliente"))
+                        .cantidadVentas(((Number) row.get("cantidadVentas")).longValue())
+                        .totalCompras(((Number) row.get("totalCompras")).doubleValue())
+                        .ultimaCompra(((Timestamp) row.get("ultimaCompra"))
+                                .toLocalDateTime().toLocalDate()) // <-- Aquí
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+
 
     private VentaResponseDTO convertirAVentaResponseDTO(Venta venta) {
         List<ConceptoResponseDTO> conceptosDTO = venta.getConceptos().stream()

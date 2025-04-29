@@ -1,6 +1,7 @@
 package com.VentaMex.apiVentaMex.service.interfaces;
 import com.VentaMex.apiVentaMex.persistence.entities.Producto;
 import com.VentaMex.apiVentaMex.persistence.entities.Venta;
+import com.VentaMex.apiVentaMex.presentation.dto.HistorialVentaDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaRequestDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
 import org.springframework.cache.annotation.CacheEvict;
@@ -8,6 +9,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -20,4 +23,5 @@ public interface VentaService {
     @CacheEvict(value = "ventas", key = "#id")
     void eliminarVenta(Long id);
     Page<VentaResponseDTO> buscarVentas(String search, Pageable pageable);
+    List<HistorialVentaDTO> obtenerHistorialVentas(LocalDate fechaInicio, LocalDate fechaFin);
 }

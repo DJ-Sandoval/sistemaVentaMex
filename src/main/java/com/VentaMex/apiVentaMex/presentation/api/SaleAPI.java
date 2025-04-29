@@ -1,5 +1,6 @@
 package com.VentaMex.apiVentaMex.presentation.api;
 
+import com.VentaMex.apiVentaMex.presentation.dto.HistorialVentaDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaRequestDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -8,10 +9,13 @@ import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Validated
@@ -37,4 +41,11 @@ public interface SaleAPI {
     @DeleteMapping("/{id}")
     ResponseEntity<Void> eliminarVenta(
             @Parameter(description = "ID de la venta a eliminar", required = true) @PathVariable Long id);
+
+    @GetMapping("/historial")
+    ResponseEntity<List<HistorialVentaDTO>> obtenerHistorialVentas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDate fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDate fechaFin);
+
+
 }

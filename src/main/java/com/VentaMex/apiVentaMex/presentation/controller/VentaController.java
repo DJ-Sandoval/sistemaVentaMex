@@ -1,6 +1,7 @@
 package com.VentaMex.apiVentaMex.presentation.controller;
 import com.VentaMex.apiVentaMex.persistence.entities.Venta;
 import com.VentaMex.apiVentaMex.presentation.api.SaleAPI;
+import com.VentaMex.apiVentaMex.presentation.dto.HistorialVentaDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaRequestDTO;
 import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
@@ -21,6 +22,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -57,6 +60,12 @@ public class VentaController implements SaleAPI {
     public ResponseEntity<Void> eliminarVenta(Long id) {
         ventaService.eliminarVenta(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<List<HistorialVentaDTO>> obtenerHistorialVentas(LocalDate fechaInicio, LocalDate fechaFin) {
+        List<HistorialVentaDTO> historial = ventaService.obtenerHistorialVentas(fechaInicio, fechaFin);
+        return ResponseEntity.ok(historial);
     }
 
     @ExceptionHandler(VentaException.class)
