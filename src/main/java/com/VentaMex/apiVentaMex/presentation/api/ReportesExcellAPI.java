@@ -14,4 +14,10 @@ public interface ReportesExcellAPI {
 
     @GetMapping("/productos")
     public ResponseEntity<byte[]> descargarReporteProductos() throws IOException;
+
+    @GetMapping("/clientes")
+    public ResponseEntity<byte[]> descargarReporteClientes() throws IOException;
+
+    @GetMapping("/ventas")
+    public ResponseEntity<byte[]> descargarReporteVentas() throws IOException;
 }
