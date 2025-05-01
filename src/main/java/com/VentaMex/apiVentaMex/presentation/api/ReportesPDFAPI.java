@@ -6,10 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.io.IOException;
-
-@RequestMapping(ReportesAPI.BASE_URL)
-public interface ReportesAPI {
+@RequestMapping(ReportesPDFAPI.BASE_URL)
+public interface ReportesPDFAPI {
     String BASE_URL="/api/reportes";
 
     @GetMapping(value = "/productos-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
@@ -20,4 +18,10 @@ public interface ReportesAPI {
 
     @GetMapping(value = "/ventas-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     ResponseEntity<byte[]> exportarVentasPDF(HttpServletRequest request) throws Exception;
+
+    @GetMapping(value = "/categorias-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    ResponseEntity<byte[]> exportarCategoriasPDF(HttpServletRequest request) throws Exception;
+
+    @GetMapping(value = "/medidas-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    ResponseEntity<byte[]> exportarMedidasPDF(HttpServletRequest request) throws Exception;
 }

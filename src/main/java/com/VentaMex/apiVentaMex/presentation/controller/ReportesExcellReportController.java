@@ -1,18 +1,14 @@
 package com.VentaMex.apiVentaMex.presentation.controller;
 import java.awt.Color;
+
+import com.VentaMex.apiVentaMex.presentation.dto.*;
+import com.VentaMex.apiVentaMex.service.interfaces.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.DefaultIndexedColorMap;
 import com.VentaMex.apiVentaMex.presentation.api.ReportesExcellAPI;
-import com.VentaMex.apiVentaMex.presentation.dto.ClienteDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.ConceptoSimpleDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.ProductoDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
-import com.VentaMex.apiVentaMex.service.interfaces.IClienteService;
-import com.VentaMex.apiVentaMex.service.interfaces.IProductoService;
-import com.VentaMex.apiVentaMex.service.interfaces.VentaService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -43,6 +39,12 @@ public class ReportesExcellReportController  implements ReportesExcellAPI {
 
     @Autowired
     private VentaService ventaService;
+
+    @Autowired
+    private ICategoriaService categoriaService;
+
+    @Autowired
+    private IMedidaService medidaService;
 
 
     @Override
@@ -237,6 +239,139 @@ public class ReportesExcellReportController  implements ReportesExcellAPI {
         fos.close();
 
         // Enviar como descarga al navegador
+        HttpHeaders headersResponse = new HttpHeaders();
+        headersResponse.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headersResponse.setContentDispositionFormData("attachment", fileName);
+
+        return ResponseEntity.ok()
+                .headers(headersResponse)
+                .body(outputStream.toByteArray());
+    }
+
+    @Override
+    public ResponseEntity<byte[]> descargarReporteCategorias() throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Listado de Categorias");
+
+        // Estilos
+        Color categoriasColor = new Color(254, 186, 23);
+        CellStyle headerStyle = createHeaderStyle(workbook, categoriasColor);
+        CellStyle titleStyle = createTitleStyle(workbook);
+
+        // Titulo
+        Row titleRow = sheet.createRow(0);
+        Cell titleCell = titleRow.createCell(0);
+        titleCell.setCellValue("Listado de Categorias");
+        titleCell.setCellStyle(titleStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 2));
+
+        // Encabezados
+        Row headerRow = sheet.createRow(3);
+        String[] headers = {"ID", "Nombre", "Estado"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        // Datos
+        Page<CategoriaDTO> categorias = categoriaService.obtenerTodasCategorias(
+                PageRequest.of(0, Integer.MAX_VALUE));
+        int rowNum = 4;
+        for (CategoriaDTO categoria : categorias.getContent()) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(categoria.getId());
+            row.createCell(1).setCellValue(categoria.getNombre());
+            row.createCell(2).setCellValue(categoria.getEstado().name().substring(0, 1).toUpperCase() + categoria.getEstado().name().substring(1).toLowerCase());
+        }
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+        // Crear nombre de archivo
+        String fileName = "Reporte_Categorias_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
+
+        // Escribir a byte[]
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        // ✅ Guardar en disco
+        String folderPath = "C:/reportes";
+        File carpeta = new File(folderPath);
+        if (!carpeta.exists()) carpeta.mkdirs();
+
+        FileOutputStream fos = new FileOutputStream(folderPath + "/" + fileName);
+        fos.write(outputStream.toByteArray());
+        fos.close();
+
+        // ✅ Enviar como descarga al navegador
+        HttpHeaders headersResponse = new HttpHeaders();
+        headersResponse.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headersResponse.setContentDispositionFormData("attachment", fileName);
+
+        return ResponseEntity.ok()
+                .headers(headersResponse)
+                .body(outputStream.toByteArray());
+    }
+
+    @Override
+    public ResponseEntity<byte[]> descargarReporteMedidas() throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Listado de Medidas");
+
+        // Estilos
+        Color categoriasColor = new Color(76, 59, 207);
+        CellStyle headerStyle = createHeaderStyle(workbook, categoriasColor);
+        CellStyle titleStyle = createTitleStyle(workbook);
+
+        // Titulo
+        Row titleRow = sheet.createRow(0);
+        Cell titleCell = titleRow.createCell(0);
+        titleCell.setCellValue("Listado de Medidas");
+        titleCell.setCellStyle(titleStyle);
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 3));
+
+        // Encabezados
+        Row headerRow = sheet.createRow(3);
+        String[] headers = {"ID", "Nombre", "Unidad", "Estado"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        // Datos
+        Page<MedidaDTO> medidas = medidaService.obtenerTodasMedidas(
+                PageRequest.of(0, Integer.MAX_VALUE));
+        int rowNum = 4;
+        for (MedidaDTO medida : medidas.getContent()) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(medida.getId());
+            row.createCell(1).setCellValue(medida.getNombre());
+            row.createCell(2).setCellValue(medida.getUnidad());
+            row.createCell(3).setCellValue(medida.getEstado().name().substring(0, 1).toUpperCase() + medida.getEstado().name().substring(1).toLowerCase());
+        }
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+        // Crear nombre de archivo
+        String fileName = "Reporte_Medidas_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
+
+        // Escribir a byte[]
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        // ✅ Guardar en disco
+        String folderPath = "C:/reportes";
+        File carpeta = new File(folderPath);
+        if (!carpeta.exists()) carpeta.mkdirs();
+
+        FileOutputStream fos = new FileOutputStream(folderPath + "/" + fileName);
+        fos.write(outputStream.toByteArray());
+        fos.close();
+
+        // ✅ Enviar como descarga al navegador
         HttpHeaders headersResponse = new HttpHeaders();
         headersResponse.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headersResponse.setContentDispositionFormData("attachment", fileName);

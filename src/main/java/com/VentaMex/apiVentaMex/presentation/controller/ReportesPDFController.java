@@ -1,13 +1,7 @@
 package com.VentaMex.apiVentaMex.presentation.controller;
-import com.VentaMex.apiVentaMex.presentation.api.ReportesAPI;
-import com.VentaMex.apiVentaMex.presentation.dto.ClienteDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.ConceptoSimpleDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.ProductoDTO;
-import com.VentaMex.apiVentaMex.presentation.api.ReportesAPI;
-import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
-import com.VentaMex.apiVentaMex.service.interfaces.IClienteService;
-import com.VentaMex.apiVentaMex.service.interfaces.IProductoService;
-import com.VentaMex.apiVentaMex.service.interfaces.VentaService;
+import com.VentaMex.apiVentaMex.presentation.api.ReportesPDFAPI;
+import com.VentaMex.apiVentaMex.presentation.dto.*;
+import com.VentaMex.apiVentaMex.service.interfaces.*;
 import com.itextpdf.text.*;
 import com.itextpdf.text.Font;
 import com.itextpdf.text.pdf.PdfWriter;
@@ -15,13 +9,9 @@ import com.itextpdf.text.pdf.PdfWriter;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +21,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -44,7 +33,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
-public class ReportesController implements ReportesAPI {
+public class ReportesPDFController implements ReportesPDFAPI {
 
     @Autowired
     private IProductoService productoService;
@@ -54,6 +43,12 @@ public class ReportesController implements ReportesAPI {
 
     @Autowired
     private VentaService ventaService;
+
+    @Autowired
+    private ICategoriaService categoriaService;
+
+    @Autowired
+    private IMedidaService medidaService;
 
     @Override
     public ResponseEntity<byte[]> exportarProductosPDF(HttpServletRequest request) throws Exception {
@@ -84,7 +79,7 @@ public class ReportesController implements ReportesAPI {
         tabla.setSpacingBefore(10f);
 
         // Color Docker #0db7ed
-        BaseColor dockerBlue = new BaseColor(13, 183, 237);
+        BaseColor dockerBlue = new BaseColor(76, 157, 113);
 
         Stream.of("ID", "Nombre", "Precio Unitario", "Costo")
                 .forEach(header -> {
@@ -146,7 +141,7 @@ public class ReportesController implements ReportesAPI {
         tabla.setWidthPercentage(100);
         tabla.setSpacingBefore(10f);
 
-        BaseColor azul = new BaseColor(13, 183, 237);
+        BaseColor azul = new BaseColor(8, 102, 255);
         Stream.of("ID", "Nombre")
                 .forEach(header -> {
                     PdfPCell headerCell = new PdfPCell();
@@ -221,7 +216,7 @@ public class ReportesController implements ReportesAPI {
         tablaVentas.setSpacingBefore(10f);
 
         // Color para encabezados
-        BaseColor colorEncabezado = new BaseColor(13, 183, 237);
+        BaseColor colorEncabezado = new BaseColor(119, 1, 169);
 
         // Encabezados de la tabla
         Stream.of("ID", "Fecha", "Cliente", "Total", "Productos")
@@ -287,6 +282,128 @@ public class ReportesController implements ReportesAPI {
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentDispositionFormData("attachment", "reporte_ventas.pdf");
         headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+
+        return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<byte[]> exportarCategoriasPDF(HttpServletRequest request) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document();
+        PdfWriter.getInstance(document, baos);
+        document.open();
+
+        // Imagen del encabezado
+        ClassPathResource imgFile = new ClassPathResource("static/categorias.png"); // o usa logo.png si es el mismo
+        try (InputStream imgStream = imgFile.getInputStream()) {
+            Image logo = Image.getInstance(imgStream.readAllBytes());
+            logo.scaleToFit(100, 100);
+            logo.setAlignment(Image.LEFT);
+            document.add(logo);
+        }
+
+        // Título
+        Paragraph titulo = new Paragraph("Reporte de Categorias", new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD));
+        titulo.setAlignment(Element.ALIGN_CENTER);
+        document.add(titulo);
+        document.add(new Paragraph(" ")); // Espacio
+
+        // Tabla
+        PdfPTable tabla = new PdfPTable(3); // ID, Nombre
+        tabla.setWidthPercentage(100);
+        tabla.setSpacingBefore(10f);
+
+        BaseColor azul = new BaseColor(254, 186, 23);
+        Stream.of("ID", "Nombre", "Estado")
+                .forEach(header -> {
+                    PdfPCell headerCell = new PdfPCell();
+                    headerCell.setBackgroundColor(azul);
+                    headerCell.setPhrase(new Phrase(header, new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, BaseColor.WHITE)));
+                    tabla.addCell(headerCell);
+                });
+
+        List<CategoriaDTO> categorias = categoriaService.obtenerTodasCategorias(PageRequest.of(0, 100)).getContent();
+        for (CategoriaDTO c : categorias) {
+            tabla.addCell(c.getId().toString());
+            tabla.addCell(c.getNombre());
+            tabla.addCell(c.getEstado().name().substring(0, 1).toUpperCase() + c.getEstado().name().substring(1).toLowerCase());
+        }
+
+        document.add(tabla);
+        document.close();
+
+        // Guardar copia local
+        File carpeta = new File("C:/reportes");
+        if (!carpeta.exists()) carpeta.mkdirs();
+
+        String filePath = "C:/reportes/reporte_categorias_" + System.currentTimeMillis() + ".pdf";
+        Files.write(Paths.get(filePath), baos.toByteArray());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "reporte_categorias.pdf");
+
+        return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+
+    }
+
+    @Override
+    public ResponseEntity<byte[]> exportarMedidasPDF(HttpServletRequest request) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document();
+        PdfWriter.getInstance(document, baos);
+        document.open();
+
+        // Imagen del encabezado
+        ClassPathResource imgFile = new ClassPathResource("static/medidas.png"); // o usa logo.png si es el mismo
+        try (InputStream imgStream = imgFile.getInputStream()) {
+            Image logo = Image.getInstance(imgStream.readAllBytes());
+            logo.scaleToFit(100, 100);
+            logo.setAlignment(Image.LEFT);
+            document.add(logo);
+        }
+
+        // Título
+        Paragraph titulo = new Paragraph("Reporte de Medidas", new Font(Font.FontFamily.HELVETICA, 16, Font.BOLD));
+        titulo.setAlignment(Element.ALIGN_CENTER);
+        document.add(titulo);
+        document.add(new Paragraph(" ")); // Espacio
+
+        // Tabla
+        PdfPTable tabla = new PdfPTable(4); // ID, Nombre
+        tabla.setWidthPercentage(100);
+        tabla.setSpacingBefore(10f);
+
+        BaseColor azul = new BaseColor(76, 59, 207);
+        Stream.of("ID", "Nombre", "Unidad", "Estado")
+                .forEach(header -> {
+                    PdfPCell headerCell = new PdfPCell();
+                    headerCell.setBackgroundColor(azul);
+                    headerCell.setPhrase(new Phrase(header, new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, BaseColor.WHITE)));
+                    tabla.addCell(headerCell);
+                });
+
+        List<MedidaDTO> medidas = medidaService.obtenerTodasMedidas(PageRequest.of(0, 100)).getContent();
+        for (MedidaDTO m : medidas) {
+            tabla.addCell(m.getId().toString());
+            tabla.addCell(m.getNombre());
+            tabla.addCell(m.getUnidad());
+            tabla.addCell(m.getEstado().name().substring(0, 1).toUpperCase() + m.getEstado().name().substring(1).toLowerCase());
+        }
+
+        document.add(tabla);
+        document.close();
+
+        // Guardar copia local
+        File carpeta = new File("C:/reportes");
+        if (!carpeta.exists()) carpeta.mkdirs();
+
+        String filePath = "C:/reportes/reporte_medidas_" + System.currentTimeMillis() + ".pdf";
+        Files.write(Paths.get(filePath), baos.toByteArray());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "reporte_medidas.pdf");
 
         return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
     }

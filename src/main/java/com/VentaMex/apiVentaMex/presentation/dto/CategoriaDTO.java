@@ -1,14 +1,20 @@
 package com.VentaMex.apiVentaMex.presentation.dto;
 
 import com.VentaMex.apiVentaMex.persistence.entities.Estado;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+
 import java.util.List;
 
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
-public class ClienteDTO {
+@AllArgsConstructor
+@Builder
+public class CategoriaDTO {
     private Long id;
     private String nombre;
-    private List<VentaDTO> ventas;
+    private Estado estado;
+    @JsonIgnore
+    private List<ProductoDTO> productos;
 }

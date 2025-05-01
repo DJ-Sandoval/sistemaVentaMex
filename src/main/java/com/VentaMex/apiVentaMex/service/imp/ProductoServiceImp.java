@@ -2,10 +2,7 @@ package com.VentaMex.apiVentaMex.service.imp;
 
 import com.VentaMex.apiVentaMex.persistence.entities.Producto;
 import com.VentaMex.apiVentaMex.persistence.repository.ProductoRepository;
-import com.VentaMex.apiVentaMex.presentation.dto.ConceptoProductoDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.ConceptoSimpleDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.ProductoDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.ProductoResponseDTO;
+import com.VentaMex.apiVentaMex.presentation.dto.*;
 import com.VentaMex.apiVentaMex.service.exception.ProductoNotFoundException;
 import com.VentaMex.apiVentaMex.service.interfaces.IProductoService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -91,6 +88,16 @@ public class ProductoServiceImp implements IProductoService {
     private ProductoDTO convertirADTO(Producto producto) {
         ProductoDTO dto = modelMapper.map(producto, ProductoDTO.class);
 
+        if (producto.getCategoria() != null) {
+            dto.setCategoria(modelMapper.map(producto.getCategoria(), CategoriaDTO.class));
+            dto.setCategoriaId(producto.getCategoria().getId());
+        }
+
+        if (producto.getMedida() != null) {
+            dto.setMedida(modelMapper.map(producto.getMedida(), MedidaDTO.class));
+            dto.setMedidaId(producto.getMedida().getId());
+        }
+
         if (producto.getConceptos() != null) {
             dto.setConceptos(producto.getConceptos().stream()
                     .map(concepto -> ConceptoSimpleDTO.builder()
@@ -102,8 +109,10 @@ public class ProductoServiceImp implements IProductoService {
                             .build())
                     .collect(Collectors.toList()));
         }
+
         return dto;
     }
+
 
     public ProductoDTO fallbackObtenerProducto(Long id, Throwable ex) {
         log.error("Error al obtener producto con ID {}: {}", id, ex.toString());

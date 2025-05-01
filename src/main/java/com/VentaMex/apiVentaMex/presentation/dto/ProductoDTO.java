@@ -13,5 +13,9 @@ public class ProductoDTO {
     private String nombre;
     private Double precioUnitario;
     private Double costo;
+    private Long categoriaId;
+    private Long medidaId;
+    private CategoriaDTO categoria;
+    private MedidaDTO medida;
     private List<ConceptoSimpleDTO> conceptos;
 }

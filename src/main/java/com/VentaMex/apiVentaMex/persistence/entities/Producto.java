@@ -32,6 +32,14 @@ public class Producto {
     @Column(nullable = false)
     private Double costo;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id")
+    private  Categoria categoria;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "medida_id")
+    private Medida medida;
+
     @OneToMany(mappedBy = "producto", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Concepto> conceptos = new ArrayList<>();

@@ -16,5 +16,7 @@ public class ProductoResponseDTO {
     private String nombre;
     private Double precioUnitario;
     private Double costo;
+    private Long categoriaId;
+    private Long medidaId;
     private List<ConceptoProductoDTO> conceptos;
 }

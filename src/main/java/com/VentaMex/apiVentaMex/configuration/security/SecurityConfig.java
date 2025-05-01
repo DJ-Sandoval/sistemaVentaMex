@@ -48,7 +48,8 @@ public class SecurityConfig {
                     http.requestMatchers(HttpMethod.GET, "/api/history/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/reportes/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/reportes-excell/**").permitAll();
-
+                    http.requestMatchers("/api/categorias/**").permitAll();
+                    http.requestMatchers("/api/medidas/**").permitAll();
 
                     // EndPoints Privados (Roles específicos)
                     http.requestMatchers(HttpMethod.GET, "/method/get").hasRole("ADMIN");
