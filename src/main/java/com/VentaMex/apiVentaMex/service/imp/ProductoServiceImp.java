@@ -1,8 +1,14 @@
 package com.VentaMex.apiVentaMex.service.imp;
 
+import com.VentaMex.apiVentaMex.persistence.entities.Categoria;
+import com.VentaMex.apiVentaMex.persistence.entities.Medida;
 import com.VentaMex.apiVentaMex.persistence.entities.Producto;
+import com.VentaMex.apiVentaMex.persistence.repository.CategoriaRepository;
+import com.VentaMex.apiVentaMex.persistence.repository.MedidaRepository;
 import com.VentaMex.apiVentaMex.persistence.repository.ProductoRepository;
 import com.VentaMex.apiVentaMex.presentation.dto.*;
+import com.VentaMex.apiVentaMex.service.exception.CategoriaNotFoundException;
+import com.VentaMex.apiVentaMex.service.exception.MedidaNotFoundException;
 import com.VentaMex.apiVentaMex.service.exception.ProductoNotFoundException;
 import com.VentaMex.apiVentaMex.service.interfaces.IProductoService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -32,21 +38,22 @@ import java.util.stream.Collectors;
 public class ProductoServiceImp implements IProductoService {
 
     private final ProductoRepository productoRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final MedidaRepository medidaRepository;
     private final ModelMapper modelMapper;
 
     @Override
     @Transactional
     public ProductoDTO crearProducto(ProductoDTO productoDTO) {
-        Producto producto = modelMapper.map(productoDTO, Producto.class);
+        Producto producto = mapToEntity(productoDTO);
         Producto productoGuardado = productoRepository.save(producto);
         return convertirADTO(productoGuardado);
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public Page<ProductoDTO> obtenerTodosLosProductos(Pageable pageable) {
-        return productoRepository.findAll(pageable)
+        return productoRepository.findAllWithCategoriesAndMeasures(pageable)
                 .map(this::convertirADTO);
     }
 
@@ -62,19 +69,30 @@ public class ProductoServiceImp implements IProductoService {
     }
 
     @Override
+    @Transactional
     public ProductoDTO actualizarProducto(Long id, ProductoDTO productoDTO) {
-        return productoRepository.findById(id)
-                .map(producto -> {
-                    producto.setNombre(productoDTO.getNombre());
-                    producto.setCosto(productoDTO.getCosto());
-                    producto.setPrecioUnitario(productoDTO.getPrecioUnitario());
-                    Producto productoActualizado = productoRepository.save(producto);
-                    return convertirADTO(productoActualizado);
-                })
+        Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new ProductoNotFoundException(id));
+
+        producto.setNombre(productoDTO.getNombre());
+        producto.setCosto(productoDTO.getCosto());
+        producto.setPrecioUnitario(productoDTO.getPrecioUnitario());
+
+        if (productoDTO.getCategoriaId() != null) {
+            Categoria categoria = categoriaRepository.findById(productoDTO.getCategoriaId())
+                    .orElseThrow(() -> new CategoriaNotFoundException(productoDTO.getCategoriaId()));
+            producto.setCategoria(categoria);
+        }
+
+        if (productoDTO.getMedidaId() != null) {
+            Medida medida = medidaRepository.findById(productoDTO.getMedidaId())
+                    .orElseThrow(() -> new MedidaNotFoundException(productoDTO.getMedidaId()));
+            producto.setMedida(medida);
+        }
+
+        Producto productoActualizado = productoRepository.save(producto);
+        return convertirADTO(productoActualizado);
     }
-
-
 
     @Override
     @Transactional
@@ -86,37 +104,81 @@ public class ProductoServiceImp implements IProductoService {
     }
 
     private ProductoDTO convertirADTO(Producto producto) {
-        ProductoDTO dto = modelMapper.map(producto, ProductoDTO.class);
+        ProductoDTO productoDTO = ProductoDTO.builder()
+                .id(producto.getId())
+                .nombre(producto.getNombre())
+                .precioUnitario(producto.getPrecioUnitario())
+                .costo(producto.getCosto())
+                .categoriaId(producto.getCategoria() != null ? producto.getCategoria().getId() : null)
+                .medidaId(producto.getMedida() != null ? producto.getMedida().getId() : null)
+                .build();
 
+        // Set CategoriaDTO
         if (producto.getCategoria() != null) {
-            dto.setCategoria(modelMapper.map(producto.getCategoria(), CategoriaDTO.class));
-            dto.setCategoriaId(producto.getCategoria().getId());
+            CategoriaDTO categoriaDTO = CategoriaDTO.builder()
+                    .id(producto.getCategoria().getId())
+                    .nombre(producto.getCategoria().getNombre())
+                    .estado(producto.getCategoria().getEstado())
+                    .build();
+            productoDTO.setCategoria(categoriaDTO);
         }
 
+        // Set MedidaDTO
         if (producto.getMedida() != null) {
-            dto.setMedida(modelMapper.map(producto.getMedida(), MedidaDTO.class));
-            dto.setMedidaId(producto.getMedida().getId());
+            MedidaDTO medidaDTO = MedidaDTO.builder()
+                    .id(producto.getMedida().getId())
+                    .nombre(producto.getMedida().getNombre())
+                    .unidad(producto.getMedida().getUnidad())
+                    .estado(producto.getMedida().getEstado())
+                    .build();
+            productoDTO.setMedida(medidaDTO);
         }
 
+        // Set Conceptos
         if (producto.getConceptos() != null) {
-            dto.setConceptos(producto.getConceptos().stream()
+            List<ConceptoSimpleDTO> conceptoDTOs = producto.getConceptos().stream()
                     .map(concepto -> ConceptoSimpleDTO.builder()
                             .id(concepto.getId())
                             .cantidad(concepto.getCantidad())
                             .precioUnitario(concepto.getPrecioUnitario())
                             .importe(concepto.getImporte())
-                            .ventaId(concepto.getVenta().getId())
+                            .ventaId(concepto.getVenta() != null ? concepto.getVenta().getId() : null)
                             .build())
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList());
+            productoDTO.setConceptos(conceptoDTOs);
         }
 
-        return dto;
+        return productoDTO;
     }
 
+    private Producto mapToEntity(ProductoDTO productoDTO) {
+        Producto producto = Producto.builder()
+                .id(productoDTO.getId())
+                .nombre(productoDTO.getNombre())
+                .precioUnitario(productoDTO.getPrecioUnitario())
+                .costo(productoDTO.getCosto())
+                .build();
+
+        if (productoDTO.getCategoriaId() != null) {
+            Categoria categoria = categoriaRepository.findById(productoDTO.getCategoriaId())
+                    .orElseThrow(() -> new CategoriaNotFoundException(productoDTO.getCategoriaId()));
+            producto.setCategoria(categoria);
+        }
+
+        if (productoDTO.getMedidaId() != null) {
+            Medida medida = medidaRepository.findById(productoDTO.getMedidaId())
+                    .orElseThrow(() -> new MedidaNotFoundException(productoDTO.getMedidaId()));
+            producto.setMedida(medida);
+        }
+
+        return producto;
+    }
 
     public ProductoDTO fallbackObtenerProducto(Long id, Throwable ex) {
         log.error("Error al obtener producto con ID {}: {}", id, ex.toString());
-        return new ProductoDTO(); // o una respuesta default
+        return ProductoDTO.builder()
+                .id(id)
+                .nombre("Error: Producto no disponible")
+                .build();
     }
-
 }

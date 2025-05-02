@@ -90,16 +90,21 @@ public class CategoriaServiceImp implements ICategoriaService {
         categoriaRepository.deleteById(id);
     }
 
-    // Convertir DTO a entidad
+    // Convert DTO to entity
     public CategoriaDTO mapToDTO(Categoria categoria) {
-        return CategoriaDTO.builder()
+        CategoriaDTO categoriaDTO = CategoriaDTO.builder()
                 .id(categoria.getId())
                 .nombre(categoria.getNombre())
                 .estado(categoria.getEstado())
-                .productos(categoria.getProductos().stream()
-                        .map(this::mapProductoToDTO)
-                        .collect(Collectors.toList()))
                 .build();
+
+        // Map products without categoria to avoid recursion
+        List<ProductoDTO> productoDTOs = categoria.getProductos().stream()
+                .map(this::mapProductoToDTO)
+                .collect(Collectors.toList());
+        categoriaDTO.setProductos(productoDTOs);
+
+        return categoriaDTO;
     }
 
     private Categoria mapToEntity(CategoriaDTO categoriaDTO) {
@@ -110,12 +115,55 @@ public class CategoriaServiceImp implements ICategoriaService {
                 .build();
 
         if (categoriaDTO.getProductos() != null) {
-            categoria.setProductos(categoriaDTO.getProductos().stream()
+            List<Producto> productos = categoriaDTO.getProductos().stream()
                     .map(this::mapProductoDTOToEntity)
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList());
+            categoria.setProductos(productos);
+            // Set the categoria reference in each product to maintain the relationship
+            productos.forEach(producto -> producto.setCategoria(categoria));
         }
 
         return categoria;
+    }
+
+    private ProductoDTO mapProductoToDTO(Producto producto) {
+        ProductoDTO productoDTO = ProductoDTO.builder()
+                .id(producto.getId())
+                .nombre(producto.getNombre())
+                .precioUnitario(producto.getPrecioUnitario())
+                .costo(producto.getCosto())
+                .categoriaId(producto.getCategoria() != null ? producto.getCategoria().getId() : null)
+                .medidaId(producto.getMedida() != null ? producto.getMedida().getId() : null)
+                .build();
+
+        // Map conceptos
+        if (producto.getConceptos() != null) {
+            List<ConceptoSimpleDTO> conceptoDTOs = producto.getConceptos().stream()
+                    .map(concepto -> ConceptoSimpleDTO.builder()
+                            .id(concepto.getId())
+                            .cantidad(concepto.getCantidad())
+                            .precioUnitario(concepto.getPrecioUnitario())
+                            .importe(concepto.getImporte())
+                            .ventaId(concepto.getVenta() != null ? concepto.getVenta().getId() : null)
+                            .build())
+                    .collect(Collectors.toList());
+            productoDTO.setConceptos(conceptoDTOs);
+        }
+
+        // Do not set categoria or medida in ProductoDTO to rely on @JsonBackReference
+        return productoDTO;
+    }
+
+    private Producto mapProductoDTOToEntity(ProductoDTO productoDTO) {
+        Producto producto = Producto.builder()
+                .id(productoDTO.getId())
+                .nombre(productoDTO.getNombre())
+                .precioUnitario(productoDTO.getPrecioUnitario())
+                .costo(productoDTO.getCosto())
+                .build();
+
+        // Categoria and Medida should be set by the caller (e.g., in mapToEntity)
+        return producto;
     }
 
     // Fallback methods
@@ -146,34 +194,5 @@ public class CategoriaServiceImp implements ICategoriaService {
 
     private void fallbackEliminarCategoria(Long id, Throwable t) {
         throw new RuntimeException("No se pudo eliminar la categoría con id: " + id, t);
-    }
-
-
-    private ProductoDTO mapProductoToDTO(Producto producto) {
-        return ProductoDTO.builder()
-                .id(producto.getId())
-                .nombre(producto.getNombre())
-                .precioUnitario(producto.getPrecioUnitario())
-                .costo(producto.getCosto())
-                .conceptos(producto.getConceptos().stream()
-                        .map(concepto -> ConceptoSimpleDTO.builder()
-                                .id(concepto.getId())
-                                .cantidad(concepto.getCantidad())
-                                .precioUnitario(concepto.getPrecioUnitario())
-                                .importe(concepto.getImporte())
-                                .ventaId(concepto.getVenta() != null ? concepto.getVenta().getId() : null)
-                                .build())
-                        .collect(Collectors.toList()))
-                .build();
-    }
-
-
-    private Producto mapProductoDTOToEntity(ProductoDTO productoDTO) {
-        return Producto.builder()
-                .id(productoDTO.getId())
-                .nombre(productoDTO.getNombre())
-                .precioUnitario(productoDTO.getPrecioUnitario())
-                .costo(productoDTO.getCosto())
-                .build();
     }
 }

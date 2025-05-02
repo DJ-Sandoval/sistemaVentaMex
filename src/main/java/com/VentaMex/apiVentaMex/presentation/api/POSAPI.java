@@ -23,4 +23,7 @@ public interface POSAPI {
 
     @GetMapping("/registro")
     String mostrarFormRegistro();
+
+    @GetMapping("/productos")
+    String mostrarPaginaProductos();
 }
