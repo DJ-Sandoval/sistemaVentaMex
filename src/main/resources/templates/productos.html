@@ -10,16 +10,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
+            background-color: #ffffff;
+            color: #333333;
         }
-        .table-dark-blue {
-            background-color: #0d1b2a;
-            color: #e0e0e0;
+        .table-light {
+            background-color: #f8f9fa;
+            color: #333333;
         }
-        .table-dark-blue th {
-            background-color: #1b263b;
-            color: #4dabf7;
+        .table-light th {
+            background-color: rgb(41, 33, 132);
+            color: #ffffff;
         }
         .btn-primary {
             background-color: #1e90ff;
@@ -31,34 +31,51 @@
             border-color: #1565c0;
         }
         .modal-content {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
+            background-color: #ffffff;
+            color: #333333;
         }
         .form-control {
-            background-color: #2c2c2c;
-            color: #e0e0e0;
+            background-color: #ffffff;
+            color: #333333;
             border-color: #4dabf7;
         }
         .form-control:focus {
-            background-color: #2c2c2c;
-            color: #e0e0e0;
+            background-color: #ffffff;
+            color: #333333;
             border-color: #1e90ff;
             box-shadow: 0 0 0 0.2rem rgba(30, 144, 255, 0.25);
         }
         .invalid-feedback {
             color: #ff6b6b;
         }
+        .page-item.active .page-link {
+            background-color: #1e90ff;
+            border-color: #1e90ff;
+            color: #ffffff;
+        }
+        .page-link {
+            background-color: #ffffff;
+            color: #4dabf7;
+            border-color: #4dabf7;
+        }
+        .page-link:hover {
+            background-color: #1565c0;
+            color: #ffffff;
+        }
+        .pagination {
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
 <div class="container py-5">
     <!-- Título -->
-    <h1 class="text-center mb-4 text-light">Lista de Productos</h1>
+    <h1 class="text-center mb-4">Lista de Productos</h1>
 
     <!-- Buscador -->
     <div class="row justify-content-center mb-4">
         <div class="col-md-6">
-            <input type="text" id="searchInput" class="form-control bg-dark text-light border-primary"
+            <input type="text" id="searchInput" class="form-control border-primary"
                    placeholder="Buscar por ID o nombre..." onkeyup="filterTable()">
         </div>
     </div>
@@ -81,10 +98,9 @@
         </div>
     </div>
 
-
     <!-- Tabla de Productos -->
     <div class="table-responsive">
-        <table class="table table-dark-blue table-bordered table-hover" id="productoTable">
+        <table class="table table-light table-bordered table-hover" id="productoTable">
             <thead>
             <tr>
                 <th>ID</th>
@@ -102,12 +118,27 @@
     </div>
 
     <!-- Paginación -->
-    <div class="d-flex justify-content-center mt-4" id="pagination">
-        <nav aria-label="Paginación de productos">
-            <ul class="pagination" id="paginationList"></ul>
+    <!-- Paginación -->
+    <!-- Paginación -->
+    <div id="paginador" class="d-flex justify-content-center mt-4">
+        <nav>
+            <ul class="pagination">
+                <li id="prevPage" class="page-item disabled">
+                    <a class="page-link" href="javascript:void(0)" onclick="cambiarPagina(currentPage - 1)">
+                        <i class="fas fa-arrow-left me-1"></i> Anterior
+                    </a>
+                </li>
+                <!-- Los números de página se generarán dinámicamente aquí -->
+                <li id="nextPage" class="page-item disabled">
+                    <a class="page-link" href="javascript:void(0)" onclick="cambiarPagina(currentPage + 1)">
+                        Siguiente <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </li>
+            </ul>
         </nav>
     </div>
 </div>
+
 
 <!-- Modal Nuevo Producto -->
 <div class="modal fade" id="nuevoProductoModal" tabindex="-1" aria-labelledby="nuevoProductoModalLabel" aria-hidden="true">
@@ -203,54 +234,63 @@
 <script>
     // Configuración de paginación
     let currentPage = 0;
-    const pageSize = 6;
+const pageSize = 20;
+let totalPages = 0; // Inicializamos en 0, se actualizará con la respuesta del backend
 
-    // Cargar productos al iniciar
-    document.addEventListener('DOMContentLoaded', () => {
+// Cargar productos al iniciar
+document.addEventListener('DOMContentLoaded', () => {
+    cargarProductos(currentPage);
+    cargarCategorias();
+    cargarMedidas();
+});
+
+// Función para cambiar de página
+function cambiarPagina(nuevaPagina) {
+    if (nuevaPagina >= 0 && nuevaPagina < totalPages) {
+        currentPage = nuevaPagina;
         cargarProductos(currentPage);
-        cargarCategorias();
-        cargarMedidas();
-    });
+    }
+}
 
-    // Filtrado en tiempo real
-    function filterTable() {
-        const input = document.getElementById('searchInput').value.toLowerCase();
-        const rows = document.querySelectorAll('#productoTableBody tr');
+// Función para generar el paginador
+function generarPaginador(totalPages, currentPage) {
+    const pagination = document.querySelector('.pagination');
+    // Elimina todos los elementos excepto Anterior y Siguiente
+    const prev = document.getElementById('prevPage');
+    const next = document.getElementById('nextPage');
 
-        rows.forEach(row => {
-            const id = row.cells[0].textContent.toLowerCase();
-            const nombre = row.cells[1].textContent.toLowerCase();
-            row.style.display = (id.includes(input) || nombre.includes(input)) ? '' : 'none';
-        });
+    // Elimina elementos antiguos (entre "Anterior" y "Siguiente")
+    while (pagination.children.length > 2) {
+        pagination.removeChild(pagination.children[1]);
     }
 
-    // Validación de formularios
-    function validarFormulario(formId) {
-        const form = document.getElementById(formId);
-        if (!form.checkValidity()) {
-            form.classList.add('was-validated');
-            return false;
-        }
-        return true;
+    // Genera los botones numéricos de las páginas
+    for (let i = 0; i < totalPages; i++) {
+        const li = document.createElement('li');
+        li.className = 'page-item' + (i === currentPage ? ' active' : '');
+        li.innerHTML = `<a class="page-link" href="javascript:void(0)" onclick="cambiarPagina(${i})">${i + 1}</a>`;
+        pagination.insertBefore(li, next);
     }
 
-    // Cargar productos con paginación
-    // Modificar la función cargarProductos
-    function cargarProductos(page) {
-        fetch(`/api/productos?page=${page}&size=${pageSize}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        })
+    // Habilita/deshabilita botones Anterior/Siguiente
+    prev.classList.toggle('disabled', currentPage === 0);
+    next.classList.toggle('disabled', currentPage >= totalPages - 1);
+}
+
+// Cargar productos con paginación
+function cargarProductos(page) {
+    fetch(`/api/productos?page=${page}&size=${pageSize}`)
         .then(response => response.json())
         .then(data => {
             const tbody = document.getElementById('productoTableBody');
             tbody.innerHTML = '';
+            totalPages = data.page.totalPages;
 
-            // Obtener categorías y medidas
             Promise.all([
                 fetch('/api/categorias?size=100').then(res => res.json()),
                 fetch('/api/medidas?size=100').then(res => res.json())
-            ]).then(([categoriasData, medidasData]) => {
+            ])
+            .then(([categoriasData, medidasData]) => {
                 const categorias = categoriasData.content;
                 const medidas = medidasData.content;
 
@@ -267,9 +307,7 @@
                             <td>${categoria ? categoria.nombre : 'Sin categoría'}</td>
                             <td>${medida ? medida.nombre : 'Sin medida'}</td>
                             <td>
-                                <button class="btn btn-sm btn-primary me-1" data-bs-toggle="modal"
-                                        data-bs-target="#editarProductoModal"
-                                        onclick="cargarDatosEditar(${producto.id})">
+                                <button class="btn btn-sm btn-primary me-1" onclick="cargarDatosEditar(${producto.id})">
                                     <i class="fas fa-edit"></i> Editar
                                 </button>
                                 <button class="btn btn-sm btn-danger" onclick="eliminarProducto(${producto.id})">
@@ -280,102 +318,79 @@
                     tbody.insertAdjacentHTML('beforeend', row);
                 });
 
-                // Actualizar paginación
-                renderPaginacion(data.totalPages, data.number);
-            });
+                // Generar paginador
+                generarPaginador(totalPages, currentPage);
+            })
+            .catch(error => console.error('Error al cargar categorías y medidas:', error));
         })
         .catch(error => console.error('Error al cargar productos:', error));
+}
+
+// Filtrado en tiempo real
+function filterTable() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#productoTableBody tr');
+
+    rows.forEach(row => {
+        const id = row.cells[0].textContent.toLowerCase();
+        const nombre = row.cells[1].textContent.toLowerCase();
+        row.style.display = (id.includes(input) || nombre.includes(input)) ? '' : 'none';
+    });
+}
+
+// Validación de formularios
+function validarFormulario(formId) {
+    const form = document.getElementById(formId);
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return false;
     }
-
-    // Renderizar paginación
-    function renderPaginacion(totalPages, currentPageNumber) {
-        const paginationList = document.getElementById('paginationList');
-        paginationList.innerHTML = '';
-
-        if (totalPages <= 1) return;
-
-        // Botón Anterior
-        const prevDisabled = currentPageNumber === 0 ? 'disabled' : '';
-        paginationList.innerHTML += `
-            <li class="page-item ${prevDisabled}">
-                <a class="page-link bg-dark text-light border-primary" href="#" onclick="if (!this.parentElement.classList.contains('disabled')) cargarProductos(${currentPageNumber - 1})">Anterior</a>
-            </li>`;
-
-        // Números de página (mostrar un rango limitado para evitar saturación)
-        const maxPagesToShow = 5;
-        let startPage = Math.max(0, currentPageNumber - Math.floor(maxPagesToShow / 2));
-        let endPage = Math.min(totalPages, startPage + maxPagesToShow);
-
-        if (endPage - startPage < maxPagesToShow) {
-            startPage = Math.max(0, endPage - maxPagesToShow);
-        }
-
-        for (let i = startPage; i < endPage; i++) {
-            const active = i === currentPageNumber ? 'active' : '';
-            paginationList.innerHTML += `
-                <li class="page-item ${active}">
-                    <a class="page-link bg-dark text-light border-primary" href="#" onclick="cargarProductos(${i})">${i + 1}</a>
-                </li>`;
-        }
-
-        // Botón Siguiente
-        const nextDisabled = currentPageNumber === totalPages - 1 ? 'disabled' : '';
-        paginationList.innerHTML += `
-            <li class="page-item ${nextDisabled}">
-                <a class="page-link bg-dark text-light border-primary" href="#" onclick="if (!this.parentElement.classList.contains('disabled')) cargarProductos(${currentPageNumber + 1})">Siguiente</a>
-            </li>`;
-
-        // Actualizar currentPage
-        currentPage = currentPageNumber;
-    }
+    return true;
+}
 
     // Cargar categorías
     function cargarCategorias() {
-    fetch('/api/categorias?size=100', {  // Añadir parámetro size para obtener todas
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-    })
-    .then(response => response.json())
-    .then(data => {
-        const selectNuevo = document.getElementById('categoriaId');
-        const selectEditar = document.getElementById('editCategoriaId');
-        // Limpiar opciones existentes excepto la primera
-        selectNuevo.innerHTML = '<option value="">Seleccione una categoría</option>';
-        selectEditar.innerHTML = '<option value="">Seleccione una categoría</option>';
+        fetch('/api/categorias?size=100', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const selectNuevo = document.getElementById('categoriaId');
+            const selectEditar = document.getElementById('editCategoriaId');
+            selectNuevo.innerHTML = '<option value="">Seleccione una categoría</option>';
+            selectEditar.innerHTML = '<option value="">Seleccione una categoría</option>';
 
-        // Usar data.content que contiene el array de categorías
-        data.content.forEach(categoria => {
-            const option = `<option value="${categoria.id}">${categoria.nombre}</option>`;
-            selectNuevo.innerHTML += option;
-            selectEditar.innerHTML += option;
-        });
-    })
-    .catch(error => console.error('Error al cargar categorías:', error));
-}
+            data.content.forEach(categoria => {
+                const option = `<option value="${categoria.id}">${categoria.nombre}</option>`;
+                selectNuevo.innerHTML += option;
+                selectEditar.innerHTML += option;
+            });
+        })
+        .catch(error => console.error('Error al cargar categorías:', error));
+    }
 
-// Cargar medidas
-function cargarMedidas() {
-    fetch('/api/medidas?size=100', {  // Añadir parámetro size para obtener todas
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-    })
-    .then(response => response.json())
-    .then(data => {
-        const selectNuevo = document.getElementById('medidaId');
-        const selectEditar = document.getElementById('editMedidaId');
-        // Limpiar opciones existentes excepto la primera
-        selectNuevo.innerHTML = '<option value="">Seleccione una medida</option>';
-        selectEditar.innerHTML = '<option value="">Seleccione una medida</option>';
+    // Cargar medidas
+    function cargarMedidas() {
+        fetch('/api/medidas?size=100', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const selectNuevo = document.getElementById('medidaId');
+            const selectEditar = document.getElementById('editMedidaId');
+            selectNuevo.innerHTML = '<option value="">Seleccione una medida</option>';
+            selectEditar.innerHTML = '<option value="">Seleccione una medida</option>';
 
-        // Usar data.content que contiene el array de medidas
-        data.content.forEach(medida => {
-            const option = `<option value="${medida.id}">${medida.nombre}</option>`;
-            selectNuevo.innerHTML += option;
-            selectEditar.innerHTML += option;
-        });
-    })
-    .catch(error => console.error('Error al cargar medidas:', error));
-}
+            data.content.forEach(medida => {
+                const option = `<option value="${medida.id}">${medida.nombre}</option>`;
+                selectNuevo.innerHTML += option;
+                selectEditar.innerHTML += option;
+            });
+        })
+        .catch(error => console.error('Error al cargar medidas:', error));
+    }
 
     // Crear producto
     function crearProducto(event) {
@@ -395,10 +410,9 @@ function cargarMedidas() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // El token JWT se envía automáticamente vía cookie debido a allowCredentials(true)
             },
             body: JSON.stringify(data),
-            credentials: 'include' // Incluye cookies para autenticación
+            credentials: 'include'
         })
         .then(response => {
             if (response.ok) {
@@ -449,10 +463,9 @@ function cargarMedidas() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                // El token JWT se envía automáticamente vía cookie
             },
             body: JSON.stringify(data),
-            credentials: 'include' // Incluye cookies para autenticación
+            credentials: 'include'
         })
         .then(response => {
             if (response.ok) {
@@ -472,9 +485,8 @@ function cargarMedidas() {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    // El token JWT se envía automáticamente vía cookie
                 },
-                credentials: 'include' // Incluye cookies para autenticación
+                credentials: 'include'
             })
             .then(response => {
                 if (response.ok) {
