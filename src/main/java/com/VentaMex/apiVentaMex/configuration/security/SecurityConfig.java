@@ -48,8 +48,10 @@ public class SecurityConfig {
                     http.requestMatchers(HttpMethod.GET, "/api/history/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/reportes/**").permitAll();
                     http.requestMatchers(HttpMethod.GET, "/api/reportes-excell/**").permitAll();
-                    http.requestMatchers("/api/categorias/**").permitAll();
-                    http.requestMatchers("/api/medidas/**").permitAll();
+                    http.requestMatchers(HttpMethod.GET,"/api/categorias/**").permitAll();
+                    http.requestMatchers(HttpMethod.GET,"/api/medidas/**").permitAll();
+                    http.requestMatchers(HttpMethod.GET,"/api/backup/**").permitAll();
+                    http.requestMatchers("/api/usuarios").permitAll();
 
                     // EndPoints Privados (Roles específicos)
                     http.requestMatchers(HttpMethod.GET, "/method/get").hasRole("ADMIN");
@@ -69,6 +71,19 @@ public class SecurityConfig {
                     http.requestMatchers(HttpMethod.POST, "/api/ventas/**").authenticated();
                     http.requestMatchers(HttpMethod.DELETE, "/api/ventas/**").authenticated();
                     http.requestMatchers(HttpMethod.GET, "/web/venta").authenticated();
+
+                    // Metodos privados de Categorias
+                    http.requestMatchers(HttpMethod.POST,"/api/categorias/**").authenticated();
+                    http.requestMatchers(HttpMethod.PUT,"/api/categorias/**").authenticated();
+                    http.requestMatchers(HttpMethod.DELETE,"/api/categorias/**").authenticated();
+
+                    // Metodos privados de medidas
+                    http.requestMatchers(HttpMethod.POST,"/api/medidas/**").authenticated();
+                    http.requestMatchers(HttpMethod.PUT,"/api/medidas/**").authenticated();
+                    http.requestMatchers(HttpMethod.DELETE,"/api/medidas/**").authenticated();
+
+                    // Metodos privados de backups
+                    http.requestMatchers(HttpMethod.POST,"/api/backup/**").authenticated();
                     // Denegar acceso a cualquier otra ruta no especificada
                     http.anyRequest().authenticated();
                 })

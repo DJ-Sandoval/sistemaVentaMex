@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista de Medidas</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+        background-color: #ffffff;
+        color: #333333;
+    }
+    .table-light {
+        background-color: #f8f9fa;
+        color: #333333;
+    }
+    .table-light th {
+        background-color: rgb(41, 33, 132);
+        color: #ffffff;
+    }
+    .btn-primary {
+        background-color: #1e90ff;
+        border-color: #1e90ff;
+        transition: background-color 0.3s;
+    }
+    .btn-primary:hover {
+        background-color: #1565c0;
+        border-color: #1565c0;
+    }
+    .modal-content {
+        background-color: #ffffff;
+        color: #333333;
+    }
+    .form-control {
+        background-color: #ffffff;
+        color: #333333;
+        border-color: #4dabf7;
+    }
+    .form-control:focus {
+        background-color: #ffffff;
+        color: #333333;
+        border-color: #1e90ff;
+        box-shadow: 0 0 0 0.2rem rgba(30, 144, 255, 0.25);
+    }
+    .invalid-feedback {
+        colorViewport: #ff6b6b;
+    }
+    .page-item.active .page-link {
+        background-color: #1e90ff;
+        border-color: #1e90ff;
+        color: #ffffff;
+    }
+    .page-link {
+        background-color: #ffffff;
+        color: #4dabf7;
+        border-color: #4dabf7;
+    }
+    .page-link:hover {
+        background-color: #1565c0;
+        color: #ffffff;
+    }
+    .pagination {
+        margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container py-5">
+  <!-- Título -->
+  <h1 class="text-center mb-4">Lista de Medidas</h1>
+
+  <!-- Buscador -->
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-6">
+      <input type="text" id="searchInput" class="form-control border-primary"
+             placeholder="Buscar por ID, nombre o unidad..." onkeyup="filterTable()">
+    </div>
+  </div>
+
+  <!-- Botones -->
+  <div class="row justify-content-center mb-4">
+    <div class="col-auto">
+      <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#nuevaMedidaModal">
+        <i class="fas fa-plus me-1"></i> Nueva
+      </button>
+      <a href="/web/home" class="btn btn-secondary me-2">
+        <i class="fas fa-home me-1"></i> Volver a Inicio
+      </a>
+      <a href="/api/reportes/medidas-pdf" class="btn btn-danger me-2">
+        <i class="fas fa-file-pdf me-1"></i> Reporte PDF
+      </a>
+      <a href="/api/reportes-excell/medidas" class="btn btn-success">
+        <i class="fas fa-file-excel me-1"></i> Reporte Excel
+      </a>
+    </div>
+  </div>
+
+  <!-- Tabla de Medidas -->
+  <div class="table-responsive">
+    <table class="table table-light table-bordered table-hover" id="medidaTable">
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Unidad</th>
+        <th>Estado</th>
+        <th>Productos Asociados</th>
+        <th>Acciones</th>
+      </tr>
+      </thead>
+      <tbody id="medidaTableBody">
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  <div id="paginador" class="d-flex justify-content-center mt-4">
+    <nav>
+      <ul class="pagination">
+        <li id="prevPage" class="page-item disabled">
+          <a class="page-link" href="javascript:void(0)" onclick="cambiarPagina(currentPage - 1)">
+            <i class="fas fa-arrow-left me-1"></i> Anterior
+          </a>
+        </li>
+        <!-- Los números de página se generarán dinámicamente aquí -->
+        <li id="nextPage" class="page-item disabled">
+          <a class="page-link" href="javascript:void(0)" onclick="cambiarPagina(currentPage + 1)">
+            Siguiente <i class="fas fa-arrow-right ms-1"></i>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!-- Modal Nueva Medida -->
+<div class="modal fade" id="nuevaMedidaModal" tabindex="-1" aria-labelledby="nuevaMedidaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="nuevaMedidaModalLabel">Nueva Medida</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="nuevaMedidaForm" onsubmit="crearMedida(event)">
+          <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="nombre" name="nombre" required>
+            <div class="invalid-feedback">El nombre es obligatorio.</div>
+          </div>
+          <div class="mb-3">
+            <label for="unidad" class="form-label">Unidad</label>
+            <input type="text" class="form-control" id="unidad" name="unidad" required>
+            <div class="invalid-feedback">La unidad es obligatoria.</div>
+          </div>
+          <div class="mb-3">
+            <label for="estado" class="form-label">Estado</label>
+            <select class="form-control" id="estado" name="estado" required>
+              <option value="">Seleccione un estado</option>
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Inactivo</option>
+            </select>
+            <div class="invalid-feedback">El estado es obligatorio.</div>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Guardar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Medida -->
+<div class="modal fade" id="editarMedidaModal" tabindex="-1" aria-labelledby="editarMedidaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editarMedidaModalLabel">Editar Medida</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="editarMedidaForm" onsubmit="actualizarMedida(event)">
+          <input type="hidden" id="editId" name="id">
+          <div class="mb-3">
+            <label for="editNombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="editNombre" name="nombre" required>
+            <div class="invalid-feedback">El nombre es obligatorio.</div>
+          </div>
+          <div class="mb-3">
+            <label for="editUnidad" class="form-label">Unidad</label>
+            <input type="text" class="form-control" id="editUnidad" name="unidad" required>
+            <div class="invalid-feedback">La unidad es obligatoria.</div>
+          </div>
+          <div class="mb-3">
+            <label for="editEstado" class="form-label">Estado</label>
+            <select class="form-control" id="editEstado" name="estado" required>
+              <option value="">Seleccione un estado</option>
+              <option value="ACTIVO">Activo</option>
+              <option value="INACTIVO">Inactivo</option>
+            </select>
+            <div class="invalid-feedback">El estado es obligatorio.</div>
+          </div>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Actualizar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ver Medida -->
+<div class="modal fade" id="verMedidaModal" tabindex="-1" aria-labelledby="verMedidaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="verMedidaModalLabel">Medida con Id: </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group list-group-flush" id="medidaDetalles">
+          <li class="list-group-item"><strong>ID:</strong> <span id="detalleId"></span></li>
+          <li class="list-group-item"><strong>Nombre:</strong> <span id="detalleNombre"></span></li>
+          <li class="list-group-item"><strong>Unidad:</strong> <span id="detalleUnidad"></span></li>
+          <li class="list-group-item"><strong>Estado:</strong> <span id="detalleEstado"></span></li>
+          <li class="list-group-item"><strong>Productos Asociados:</strong> <span id="detalleProductos"></span></li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Configuración de paginación
+  let currentPage = 0;
+  const pageSize = 20;
+  let totalPages = 0;
+
+  // Cargar medidas al iniciar
+  document.addEventListener('DOMContentLoaded', () => {
+      cargarMedidas(currentPage);
+  });
+
+  // Función para cambiar de página
+  function cambiarPagina(nuevaPagina) {
+      if (nuevaPagina >= 0 && nuevaPagina < totalPages) {
+          currentPage = nuevaPagina;
+          cargarMedidas(currentPage);
+      }
+  }
+
+  // Función para generar el paginador
+  function generarPaginador(totalPages, currentPage) {
+      const pagination = document.querySelector('.pagination');
+      // Elimina todos los elementos excepto Anterior y Siguiente
+      const prev = document.getElementById('prevPage');
+      const next = document.getElementById('nextPage');
+
+      // Elimina elementos antiguos (entre "Anterior" y "Siguiente")
+      while (pagination.children.length > 2) {
+          pagination.removeChild(pagination.children[1]);
+      }
+
+      // Genera los botones numéricos de las páginas
+      for (let i = 0; i < totalPages; i++) {
+          const li = document.createElement('li');
+          li.className = 'page-item' + (i === currentPage ? ' active' : '');
+          li.innerHTML = `<a class="page-link" href="javascript:void(0)" onclick="cambiarPagina(${i})">${i + 1}</a>`;
+          pagination.insertBefore(li, next);
+      }
+
+      // Habilita/deshabilita botones Anterior/Siguiente
+      prev.classList.toggle('disabled', currentPage === 0);
+      next.classList.toggle('disabled', currentPage >= totalPages - 1);
+  }
+
+  // Cargar medidas con paginación
+  function cargarMedidas(page) {
+      fetch(`/api/medidas?page=${page}&size=${pageSize}`)
+          .then(response => response.json())
+          .then(data => {
+              const tbody = document.getElementById('medidaTableBody');
+              tbody.innerHTML = '';
+              totalPages = data.totalPages;
+
+              data.content.forEach(medida => {
+                  const productosCount = medida.productos ? medida.productos.length : 0;
+                  const row = `
+                      <tr>
+                          <td>${medida.id}</td>
+                          <td>${medida.nombre}</td>
+                          <td>${medida.unidad}</td>
+                          <td>${medida.estado}</td>
+                          <td>${productosCount}</td>
+                          <td>
+                              <button class="btn btn-sm btn-info me-1" onclick="verMedida(${medida.id})" data-bs-toggle="modal" data-bs-target="#verMedidaModal">
+                                  <i class="fas fa-eye"></i> Ver
+                              </button>
+                              <button class="btn btn-sm btn-primary me-1" onclick="cargarDatosEditar(${medida.id})">
+                                  <i class="fas fa-edit"></i> Editar
+                              </button>
+                              <button class="btn btn-sm btn-danger" onclick="eliminarMedida(${medida.id})">
+                                  <i class="fas fa-trash"></i> Eliminar
+                              </button>
+                          </td>
+                      </tr>`;
+                  tbody.insertAdjacentHTML('beforeend', row);
+              });
+
+              // Generar paginador
+              generarPaginador(totalPages, currentPage);
+          })
+          .catch(error => console.error('Error al cargar medidas:', error));
+  }
+
+  // Filtrado en tiempo real
+  function filterTable() {
+      const input = document.getElementById('searchInput').value.toLowerCase();
+      const rows = document.querySelectorAll('#medidaTableBody tr');
+
+      rows.forEach(row => {
+          const id = row.cells[0].textContent.toLowerCase();
+          const nombre = row.cells[1].textContent.toLowerCase();
+          const unidad = row.cells[2].textContent.toLowerCase();
+          row.style.display = (id.includes(input) || nombre.includes(input) || unidad.includes(input)) ? '' : 'none';
+      });
+  }
+
+  // Validación de formularios
+  function validarFormulario(formId) {
+      const form = document.getElementById(formId);
+      if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          return false;
+      }
+      return true;
+  }
+
+  // Crear medida
+  function crearMedida(event) {
+      event.preventDefault();
+      if (!validarFormulario('nuevaMedidaForm')) return;
+
+      const form = document.getElementById('nuevaMedidaForm');
+      const data = {
+          nombre: form.nombre.value,
+          unidad: form.unidad.value,
+          estado: form.estado.value
+      };
+
+      fetch('/api/medidas', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+          credentials: 'include'
+      })
+      .then(response => {
+          if (response.ok) {
+              bootstrap.Modal.getInstance(document.getElementById('nuevaMedidaModal')).hide();
+              form.reset();
+              cargarMedidas(currentPage);
+          } else {
+              alert('Error al crear la medida');
+          }
+      })
+      .catch(error => console.error('Error al crear medida:', error));
+  }
+
+  // Cargar datos para editar
+  function cargarDatosEditar(id) {
+      fetch(`/api/medidas/${id}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+      })
+      .then(response => response.json())
+      .then(data => {
+          document.getElementById('editId').value = data.id;
+          document.getElementById('editNombre').value = data.nombre;
+          document.getElementById('editUnidad').value = data.unidad;
+          document.getElementById('editEstado').value = data.estado;
+          const modal = new bootstrap.Modal(document.getElementById('editarMedidaModal'));
+          modal.show();
+      })
+      .catch(error => console.error('Error al cargar datos:', error));
+  }
+
+  // Ver medida
+  function verMedida(id) {
+      fetch(`/api/medidas/${id}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+      })
+      .then(response => response.json())
+      .then(data => {
+          document.getElementById('verMedidaModalLabel').textContent = `Medida con Id: ${data.id}`;
+          document.getElementById('detalleId').textContent = data.id;
+          document.getElementById('detalleNombre').textContent = data.nombre;
+          document.getElementById('detalleUnidad').textContent = data.unidad;
+          document.getElementById('detalleEstado').textContent = data.estado;
+          document.getElementById('detalleProductos').textContent = data.productos ? data.productos.map(p => p.nombre).join(', ') : 'Ninguno';
+      })
+      .catch(error => {
+          console.error('Error al cargar datos de la medida:', error);
+          alert('Error al cargar los datos de la medida');
+      });
+  }
+
+  // Actualizar medida
+  function actualizarMedida(event) {
+      event.preventDefault();
+      if (!validarFormulario('editarMedidaForm')) return;
+
+      const form = document.getElementById('editarMedidaForm');
+      const id = document.getElementById('editId').value;
+      const data = {
+          nombre: form.nombre.value,
+          unidad: form.unidad.value,
+          estado: form.estado.value
+      };
+
+      fetch(`/api/medidas/${id}`, {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+          credentials: 'include'
+      })
+      .then(response => {
+          if (response.ok) {
+              bootstrap.Modal.getInstance(document.getElementById('editarMedidaModal')).hide();
+              cargarMedidas(currentPage);
+          } else {
+              alert('Error al actualizar la medida');
+          }
+      })
+      .catch(error => console.error('Error al actualizar medida:', error));
+  }
+
+  // Eliminar medida
+  function eliminarMedida(id) {
+      if (confirm('¿Está seguro de eliminar esta medida?')) {
+          fetch(`/api/medidas/${id}`, {
+              method: 'DELETE',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              credentials: 'include'
+          })
+          .then(response => {
+              if (response.ok) {
+                  cargarMedidas(currentPage);
+              } else {
+                  alert('Error al eliminar la medida');
+              }
+          })
+          .catch(error => console.error('Error al eliminar:', error));
+      }
+  }
+</script>
+</body>
+</html>

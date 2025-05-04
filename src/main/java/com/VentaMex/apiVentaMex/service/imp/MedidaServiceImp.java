@@ -29,7 +29,7 @@ public class MedidaServiceImp implements IMedidaService {
     @Transactional
     @CircuitBreaker(name = MEDIDA_SERVICE, fallbackMethod = "fallbackCrearMedida")
     @Retry(name = MEDIDA_SERVICE)
-    @TimeLimiter(name = MEDIDA_SERVICE)
+    //@TimeLimiter(name = MEDIDA_SERVICE)
     public MedidaDTO crearMedida(MedidaDTO medidaDTO) {
         Medida medida = mapToEntity(medidaDTO);
         Medida savedMedida = medidaRepository.save(medida);
@@ -38,7 +38,7 @@ public class MedidaServiceImp implements IMedidaService {
 
     @CircuitBreaker(name = MEDIDA_SERVICE, fallbackMethod = "fallbackObtenerMedida")
     @Retry(name = MEDIDA_SERVICE)
-    @TimeLimiter(name = MEDIDA_SERVICE)
+    //@TimeLimiter(name = MEDIDA_SERVICE)
     public MedidaDTO obtenerMedidaPorId(Long id) {
         Medida medida = medidaRepository.findById(id)
                 .orElseThrow(() -> new MedidaNotFoundException(id));

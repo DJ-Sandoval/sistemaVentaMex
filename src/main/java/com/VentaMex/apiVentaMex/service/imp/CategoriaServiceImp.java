@@ -38,7 +38,7 @@ public class CategoriaServiceImp implements ICategoriaService {
 
     @CircuitBreaker(name = CATEGORIA_SERVICE, fallbackMethod = "fallbackObtenerCategoria")
     @Retry(name = CATEGORIA_SERVICE)
-    @TimeLimiter(name = CATEGORIA_SERVICE)
+    //@TimeLimiter(name = CATEGORIA_SERVICE)
     @Override
     public CategoriaDTO obtenerCategoriaPorId(Long id) {
         Categoria categoria = categoriaRepository.findById(id)
