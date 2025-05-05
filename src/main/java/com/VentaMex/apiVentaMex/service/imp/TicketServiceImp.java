@@ -1,72 +1,61 @@
 package com.VentaMex.apiVentaMex.service.imp;
 import com.VentaMex.apiVentaMex.persistence.entities.Concepto;
+import com.VentaMex.apiVentaMex.persistence.entities.NegocioEntity;
 import com.VentaMex.apiVentaMex.persistence.entities.Venta;
+import com.VentaMex.apiVentaMex.persistence.repository.NegocioRepository;
 import com.VentaMex.apiVentaMex.persistence.repository.VentaRepository;
-import com.VentaMex.apiVentaMex.presentation.dto.ConceptoResponseDTO;
-import com.VentaMex.apiVentaMex.presentation.dto.VentaResponseDTO;
 import com.VentaMex.apiVentaMex.service.exception.VentaException;
 import com.VentaMex.apiVentaMex.service.interfaces.TicketService;
-import com.VentaMex.apiVentaMex.service.interfaces.VentaService;
 
-import com.itextpdf.text.*;
-
-import com.itextpdf.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import javax.print.*;
-import java.awt.print.PrinterException;
-import java.io.*;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
 public class TicketServiceImp implements TicketService {
 
     private final VentaRepository ventaRepository;
-
-    @Override
-    public String generarTicketPdf(Long ventaId) throws Exception {
-        Venta venta = ventaRepository.findWithConceptosById(ventaId)
-                .orElseThrow(() -> new VentaException("Venta no encontrada con ID: " + ventaId));
-
-        String nombreArchivo = "ticket_venta_" + ventaId + ".pdf";
-        String rutaRelativa = "src/main/resources/tickets/" + nombreArchivo;
-
-        Document document = new Document();
-        PdfWriter.getInstance(document, new FileOutputStream(rutaRelativa));
-        document.open();
-
-        document.add(new Paragraph("Ticket de Venta #" + venta.getId()));
-        document.add(new Paragraph("Cliente: " + venta.getCliente().getNombre()));
-        document.add(new Paragraph("Fecha: " + venta.getFecha().toString()));
-        document.add(new Paragraph("Total: $" + venta.getTotal()));
-        document.add(new Paragraph(" "));
-        document.add(new Paragraph("Conceptos:"));
-        for (Concepto concepto : venta.getConceptos()) {
-            document.add(new Paragraph("- " + concepto.getProducto().getNombre() +
-                    " x" + concepto.getCantidad() +
-                    " $" + concepto.getImporte()));
-        }
-        document.add(new Paragraph("Gracias por su compra"));
-        document.add(new Paragraph("Este no es un comprobante fiscal"));
-        document.add(new Paragraph("VentaMex-POS v.25"));
-
-        document.close();
-
-        return rutaRelativa;
-    }
+    private final NegocioRepository negocioRepository;
 
     @Override
     public String generarTicketTexto(Long ventaId) {
         Venta venta = ventaRepository.findWithConceptosById(ventaId)
                 .orElseThrow(() -> new VentaException("Venta no encontrada con ID: " + ventaId));
 
+        // Fetch the first negocio (assuming one business for simplicity)
+        NegocioEntity negocio = negocioRepository.findAll().stream().findFirst()
+                .orElse(NegocioEntity.builder()
+                        .nombreNegocio("Negocio no configurado")
+                        .nombrePropietario("")
+                        .rfc("")
+                        .domicilio("")
+                        .telefono("")
+                        .imagen("")
+                        .build());
+
         StringBuilder sb = new StringBuilder();
         sb.append("*************************\n");
-        sb.append("  VentaMex POS v.25\n");
+        sb.append(negocio.getNombreNegocio() + "\n");
         sb.append("*************************\n");
+        // Add negocio details
+        if (!negocio.getNombrePropietario().isEmpty()) {
+            sb.append("Propietario: " + negocio.getNombrePropietario() + "\n");
+        }
+        if (!negocio.getRfc().isEmpty()) {
+            sb.append("RFC: " + negocio.getRfc() + "\n");
+        }
+        if (!negocio.getDomicilio().isEmpty()) {
+            sb.append("Domicilio: " + negocio.getDomicilio() + "\n");
+        }
+        if (!negocio.getTelefono().isEmpty()) {
+            sb.append("Telefono: " + negocio.getTelefono() + "\n");
+        }
+        if (!negocio.getImagen().isEmpty()) {
+            sb.append("[Imagen en blanco y negro]\n"); // Placeholder for image
+        }
+        sb.append("-----------------------------\n");
+
+        // Original ticket content
         sb.append("Venta #" + venta.getId() + "\n");
         sb.append("Cliente: " + venta.getCliente().getNombre() + "\n");
         sb.append("Fecha: " + venta.getFecha().toString() + "\n");
@@ -104,7 +93,8 @@ public class TicketServiceImp implements TicketService {
 
         return sb.toString();
     }
-
-
-
 }
+
+
+
+

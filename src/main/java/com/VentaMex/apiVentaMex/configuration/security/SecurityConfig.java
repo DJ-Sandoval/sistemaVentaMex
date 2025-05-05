@@ -52,7 +52,8 @@ public class SecurityConfig {
                     http.requestMatchers(HttpMethod.GET,"/api/medidas/**").permitAll();
                     http.requestMatchers(HttpMethod.GET,"/api/backup/**").permitAll();
                     http.requestMatchers("/api/usuarios").permitAll();
-
+                    http.requestMatchers("/business").permitAll();
+                    // /conf/ticket-config
                     // EndPoints Privados (Roles específicos)
                     http.requestMatchers(HttpMethod.GET, "/method/get").hasRole("ADMIN");
                     http.requestMatchers(HttpMethod.POST, "/method/post").hasRole("USER");

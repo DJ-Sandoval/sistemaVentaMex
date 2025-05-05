@@ -1,6 +1,8 @@
 package com.VentaMex.apiVentaMex.presentation.controller;
 
+import com.VentaMex.apiVentaMex.persistence.entities.NegocioEntity;
 import com.VentaMex.apiVentaMex.presentation.api.POSAPI;
+import com.VentaMex.apiVentaMex.service.interfaces.INegocioService;
 import com.VentaMex.apiVentaMex.service.interfaces.IProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -10,6 +12,9 @@ import org.springframework.ui.Model;
 
 @Controller
 public class SisyemController implements POSAPI {
+
+    @Autowired
+    private INegocioService negocioService;
     @Autowired
     private IProductoService productoService;
     @Override
@@ -60,6 +65,13 @@ public class SisyemController implements POSAPI {
     @Override
     public String mostrarPaginaBackups() {
         return "backups";
+    }
+
+    @Override
+    public String mostrarPaginaConfigTickets(Model model) {
+        model.addAttribute("negocios", negocioService.obtenerTodosNegocios());
+        model.addAttribute("negocio", new NegocioEntity());
+        return "ticketConfig";
     }
 
 

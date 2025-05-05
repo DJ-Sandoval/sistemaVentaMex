@@ -39,4 +39,7 @@ public interface POSAPI {
 
     @GetMapping("/backups")
     String mostrarPaginaBackups();
+
+    @GetMapping("/configTickets")
+    String mostrarPaginaConfigTickets(Model model);
 }

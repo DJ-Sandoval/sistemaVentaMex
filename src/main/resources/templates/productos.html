@@ -478,25 +478,44 @@ function validarFormulario(formId) {
 
     // Ver producto
     function verProducto(id) {
-        fetch(`/api/productos/${id}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(data => {
+    fetch(`/api/productos/${id}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Obtener listas de categorías y medidas
+        Promise.all([
+            fetch('/api/categorias?size=100').then(res => res.json()),
+            fetch('/api/medidas?size=100').then(res => res.json())
+        ])
+        .then(([categoriasData, medidasData]) => {
+            const categorias = categoriasData.content;
+            const medidas = medidasData.content;
+
+            // Buscar categoría y medida por ID
+            const categoria = categorias.find(c => c.id === data.categoriaId);
+            const medida = medidas.find(m => m.id === data.medidaId);
+
+            // Llenar el modal con los datos
             document.getElementById('verProductoModalLabel').textContent = `Producto con Id: ${data.id}`;
             document.getElementById('detalleId').textContent = data.id;
             document.getElementById('detalleNombre').textContent = data.nombre;
             document.getElementById('detallePrecio').textContent = data.precioUnitario;
             document.getElementById('detalleCosto').textContent = data.costo;
-            document.getElementById('detalleCategoria').textContent = data.categoria ? data.categoria.nombre : 'Sin categoría';
-            document.getElementById('detalleMedida').textContent = data.medida ? data.medida.nombre : 'Sin medida';
+            document.getElementById('detalleCategoria').textContent = categoria ? categoria.nombre : 'Sin categoría';
+            document.getElementById('detalleMedida').textContent = medida ? medida.nombre : 'Sin medida';
         })
         .catch(error => {
-            console.error('Error al cargar datos del producto:', error);
-            alert('Error al cargar los datos del producto');
+            console.error('Error al cargar categorías y medidas:', error);
+            alert('Error al cargar los datos de categoría y medida');
         });
-    }
+    })
+    .catch(error => {
+        console.error('Error al cargar datos del producto:', error);
+        alert('Error al cargar los datos del producto');
+    });
+}
 
 
     // Actualizar producto
